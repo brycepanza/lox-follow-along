@@ -1,6 +1,6 @@
 JC := javac
 
-SRC_DIR := ./src
+SRC_DIR := ./lox
 BUILD_DIR := ./build
 
 SRCS := $(shell find $(SRC_DIR) -name  "*.java")
