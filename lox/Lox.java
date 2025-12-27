@@ -20,8 +20,9 @@ import java.util.List;
 // main class for program
 public class Lox {
 
-    // execution state variable
+    // execution state variable - prevent instruction execution on error
     static boolean hadError = false;
+    // ### TODO - track if the last instruction was an error - only report blobs of errors ###
 
     // main entry point
     public static void main(String[] args) throws IOException {
