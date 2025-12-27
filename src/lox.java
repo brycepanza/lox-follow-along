@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-public Class Lox {
+public class Lox {
     public static void main(String[] args) throws IOException {
         // check for improper arguments
         if (args.length > 1) {
