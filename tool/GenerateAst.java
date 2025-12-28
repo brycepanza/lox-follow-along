@@ -29,7 +29,7 @@ public class GenerateAst {
 
         // pass type descriptions to generator
         defineAst(outputDir, "Expr", Arrays.asList(
-            "Binary     : Exr left, Token operator, Expr right",
+            "Binary     : Expr left, Token operator, Expr right",
             "Grouping   : Expr expression",
             "Literal    : Object value",
             "Unary      : Token operator, Expr right"
@@ -44,12 +44,22 @@ public class GenerateAst {
         // create object for writing to file
         PrintWriter writer = new PrintWriter(path, "UTF-8");
 
+        writer.println("/*");
+        writer.println("#   ##########################################################################");
+        writer.println("#   #                                                                        #");
+        writer.println("#   From Robert Nystrom's 'Crafting Interpreters' Section 5. Representing Code");
+        writer.println("#   #                                                                        #");
+        writer.println("#   ##########################################################################");
+        writer.println("*/");
+
         // write reused boilerplate code
         writer.println("package com.craftinginterpreters.lox;");
         writer.println();
         writer.println("import java.util.List;");
         writer.println();
         writer.println("abstract class " + baseName + " {");
+
+        defineVisitor(writer, baseName, types);
 
         // iterate for given fields in parameters
         for (String type : types) {
@@ -62,8 +72,28 @@ public class GenerateAst {
             defineType(writer, baseName, className, fields);
         }
 
+        // base accept() method - polymorphic, interfaced
+        writer.println();
+        writer.println("    abstract <R> R accept(Visitor<R> visitor);");
+
         writer.println("}");
         writer.close();
+    }
+
+    private static void defineVisitor(
+        PrintWriter writer, String baseName, List<String> types) {
+
+        writer.println("    interface Visitor<R> {");
+
+        // iterate for types of classes
+        for (String type : types) {
+            String typeName = type.split(":")[0].trim();
+            // write out class to be interfaced
+            writer.println("        R visit" + typeName  + baseName + "(" + 
+                typeName + " " + baseName.toLowerCase() + ");");
+            
+        }
+        writer.println("    }");
     }
 
     // writes out the definition for a class
@@ -91,8 +121,16 @@ public class GenerateAst {
         // close constructor
         writer.println("        }");
 
+        // visitor pattern
         writer.println();
+        writer.println("        @Override");
+        writer.println("        <R> R accept(Visitor<R> visitor) {");       // each type should receive the generic accept() method
+        writer.println("            return visitor.visit" +
+                                        className + baseName + "(this);");  // return/get type-specific accept() method
+        writer.println("        }");
 
+        // fields
+        writer.println();
         // iterate for fields
         for (String field : fields) {
             // hold fields
