@@ -1,0 +1,259 @@
+/*
+#   ###################################################################################
+#   #                                                                                 #
+#   From Robert Nystrom's 'Crafting Interpreters' Section 6.2 Recursive Decsent Parsing
+#   #                                                                                 #
+#   ###################################################################################
+*/
+
+package com.craftinginterpreters.lox;
+
+import java.util.List;
+
+// access token types direct
+import static com.craftinginterpreters.lox.TokenType.*;
+
+class Parser {
+
+    // internal parse-level error structure, persistent execution on instance
+    private static class ParseError extends RuntimeException {}
+
+    // constant list of tokens generated from source code
+    private final List<Token> tokens;
+    // for token traversal
+    private int current = 0;
+
+    // assign list at creation
+    Parser(List<Token> tokens) {
+        this.tokens = tokens;
+    }
+
+    // library method for class functionality
+    Expr parse() {
+        // attempt expression generation from tokens
+        try {
+            // token-grammar evaluation
+            return expression();
+        }
+        // check for expression generation failure
+        catch (ParseError error) {
+            // no data to return
+            return null;
+        }
+    }
+
+    // expression   -> equality rule
+    private Expr expression() {
+        // apply rule recursively
+        return equality();
+    }
+
+    // equality     -> comparison ( (  "!=" | "==" ) comparison )*
+    private Expr equality() {
+        // recursive evaluate the leading comparison nonterminal
+        Expr expr = comparison();
+
+        // eval kleen star segment
+        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+            Token operator = previous();    // hold operator segment
+            Expr right = comparison();      // hold right side of evaluation
+            // append to building left-side evaluation
+            expr = new Expr.Binary(expr, operator, right);  // recursive nonterminal rule
+        }
+
+        // send back built rule
+        return expr;
+    }
+
+    // comparison   -> term ( ( ">" | ">=" | "<" | "<=" ) term )*
+    private Expr comparison() {
+        // enforce term rule
+        Expr expr = term();
+
+        // iterate for kleene term - each true must fully match rule apply
+        while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token operator = previous();    // enforce operator rule
+            Expr right = term();            // enforce term rule
+            // concatenate
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    // term     -> factor ( ( "+" | "-") factor )*
+    private Expr term() {
+        // enforce factor found
+        Expr expr = factor();
+
+        // kleene
+        while (match(PLUS, MINUS)) {
+            Token operator = previous();
+            Expr right = factor();    // term recurse
+
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    // factor   -> unary ( ( "/" | "*" ) unary )*
+    private Expr factor() {
+        // enforce factor found
+        Expr expr = unary();
+
+        // kleene
+        while (match(SLASH, STAR)) {
+            Token operator = previous();
+            Expr right = unary();    // term recurse
+
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    // unary    -> ( "!" | "-" ) unary | primary
+    private Expr unary() {
+        // check for matching recurse condition
+        if (match(BANG, MINUS)) {
+            // hold unary term
+            Token operator = previous();
+            // recursive rule enforce
+            Expr right = unary();
+            // recursive concatenate
+            return new Expr.Unary(operator, right);
+        }
+
+        // apply unary -> primary rule
+        return primary();
+    }
+
+    // primary  -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")"
+    private Expr primary() {
+        // check for primitives and create Expression Literal
+        if (match(FALSE)) return new Expr.Literal(false);   // primary -> "false"
+        if (match(TRUE)) return new Expr.Literal(true);     // primary -> "true"
+        if (match(NIL)) return new Expr.Literal(null);      // primary -> "nil"
+
+        // check for token as primitive type
+        if (match(NUMBER, STRING)) {
+            // create literal containing token value
+            return new Expr.Literal(previous().literal);
+        }
+
+        // check for recursive rule
+        if (match(LEFT_PAREN)) {
+            // recurse on expression, enforce rule structure
+            Expr expr = expression();
+            // enforce closing parentheses
+            consume(RIGHT_PAREN, "Expect ')' after expression.");
+            // send grouped expression recursed on
+            return new Expr.Grouping(expr);
+        }
+
+        // generate error on no matching primary found - incorrect syntax
+        throw error(peek(), "Expect expression.");
+    }
+
+
+
+
+    // ##### utility methods #####
+
+    // check if a given Token matches any of the specified types
+    private boolean match(TokenType... types) {
+        // iterate through all given types
+        for (TokenType type : types) {
+            // check for a match found
+            if (check(type)) {
+                // consume token
+                advance();
+                // send success
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // verifies the next token is as expected and eats it
+        // throws error if not
+    private Token consume(TokenType type, String message) {
+        // check for current token as anticipated
+        if (check(type)) return advance();
+
+        // generate error on incorrect token sequence
+        throw error(peek(), message);
+    }
+
+
+
+    // determine if a token is at a given type
+    private boolean check(TokenType type) {
+        // check for no token
+        if (isAtEnd()) return false;
+        // compare current token varlue with token given as argument
+        return peek().type == type;
+    }
+
+    // consume token, returns passed token and adjusts index
+    private Token advance() {
+        if (!isAtEnd()) current++;    // move to next token if valid
+        return previous();          // send passed node to caller
+    }
+
+    // check if at end of token reading
+    private boolean isAtEnd() {
+        return peek().type == EOF;  // check closure node for token reading (from scanning)
+    }
+
+    // get value held at current index
+    private Token peek() {
+        return tokens.get(current);
+    }
+
+    // check last node
+    private Token previous() {
+        return tokens.get(current - 1); // safe at current = 0 ?
+    }
+
+    // report errors in parsing phase
+    private ParseError error(Token token, String message) {
+        // pass error to main entry point
+        Lox.error(token, message);
+        // send to caller
+        return new ParseError();
+    }
+
+    // state recovery for panic-mode entry
+    private void synchronize() {
+        // pass error-generating token
+        advance();
+
+        // iterate for tokens
+        while (!isAtEnd()) {
+            // check for semicolon passed and exit recovery sequence
+                // statement end check, incorrect logic for (;;)
+            if (previous().type == SEMICOLON) return;
+
+            // check current value
+            switch (peek().type) {
+                // new keyword found
+                case CLASS:
+                case FUN:
+                case VAR:
+                case FOR:
+                case IF:
+                case WHILE:
+                case PRINT:
+                case RETURN:
+                    return; // end of problematic statement found
+            }
+        }
+
+        // pass final token
+        advance();
+
+    }
+}
