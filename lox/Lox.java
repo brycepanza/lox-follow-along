@@ -77,15 +77,31 @@ public class Lox {
         // invoke scanner on source code to generate tokens
         List<Token> tokens = scanner.scanTokens();
 
-        // iterate for returned tokens
-        for (Token token : tokens) {
-            System.out.println(token);  // display for debugging
-        }
+        Parser parser = new Parser(tokens);
+        // attempt expression creation
+        Expr expression = parser.parse();
+
+        // check for error and exit call
+        if (hadError) return;
+
+        System.out.println(new AstPrinter().print(expression));
     }
 
-    // basic error reporting
+    // basic error reporting (scanning)
     static void error(int line, String message) {
         report(line, "", message);
+    }
+
+    // parse-level error handling
+    static void error(Token token, String message) {
+        // check for incorrect termination
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        }
+        // default
+        else {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
     }
 
     static void report(int line, String where, String message) {
