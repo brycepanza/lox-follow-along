@@ -8,6 +8,7 @@
 
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // access token types direct
@@ -29,20 +30,47 @@ class Parser {
     }
 
     // library method for class functionality
-    Expr parse() {
-        // attempt expression generation from tokens
-        try {
-            // token-grammar evaluation
-            return expression();
-        }
-        // check for expression generation failure
-        catch (ParseError error) {
-            // no data to return
-            return null;
-        }
+    List<Stmt> parse() {
+        // buffer to hold all statements
+        List<Stmt> statements = new ArrayList<>();
+        // iterate for tokens
+        while (!isAtEnd()) statements.add(statement());
+
+        // pass all found statements to caller
+        return statements;
+    }
+
+    // evaluate type of statement expression pass result of execution
+    private Stmt statement() {
+        // check for print statement case
+        if (match(PRINT)) return printStatement();
+
+        // default option/fallthrough case
+        return expressionStatement();
+    }
+
+    // evaluation for a print statement encountered
+    private Stmt printStatement() {
+        // hold expression to be displayed
+        Expr printVal = expression();
+        // pass end-of-statement semicolon
+        consume(SEMICOLON, "Expect ';' after value.");
+        // pass created object to caller
+        return new Stmt.Print(printVal);
+    }
+
+    // evaluation for expression statement
+    private Stmt expressionStatement() {
+        // hold statement's expression as a returned instance
+        Expr expr = expression();
+        // check for valid statement end
+        consume(SEMICOLON, "Expect ';' after value.");
+        // pass created Stmt instance to caller
+        return new Stmt.Expression(expr);
     }
 
     // expression   -> equality rule
+        // starting rule S -> expression()
     private Expr expression() {
         // apply rule recursively
         return equality();

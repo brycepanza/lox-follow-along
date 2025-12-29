@@ -85,14 +85,14 @@ public class Lox {
         List<Token> tokens = scanner.scanTokens();
 
         Parser parser = new Parser(tokens);
-        // attempt expression creation
-        Expr expression = parser.parse();
+        // attempt get statements
+        List<Stmt> statements = parser.parse();
 
         // check for error and exit call
         if (hadError) return;
 
-        // run interpreter on expression
-        interpreter.interpret(expression);
+        // run interpreter on statements
+        interpreter.interpret(statements);
     }
 
     // basic error reporting (scanning)

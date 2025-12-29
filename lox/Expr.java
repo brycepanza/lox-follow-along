@@ -1,9 +1,9 @@
 /*
-#   ###################################################################################
-#   #                                                                                 #
-#   From Robert Nystrom's 'Crafting Interpreters' Section 5.2 Implementing Syntax Trees
-#   #                                                                                 #
-#   ###################################################################################
+#   ##########################################################################
+#   #                                                                        #
+#   From Robert Nystrom's 'Crafting Interpreters' Section 5. Representing Code
+#   #                                                                        #
+#   ##########################################################################
 */
 package com.craftinginterpreters.lox;
 

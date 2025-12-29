@@ -8,17 +8,21 @@
 
 package com.craftinginterpreters.lox;
 
-// allow class to interpret expression types
-class Interpreter implements Expr.Visitor<Object> {
+import java.util.List;
 
-    // public api interface - takes an expression and applies interpreter's functionality
-    void interpret(Expr expression) {
+// allow class to interpret expression and statementtypes
+class Interpreter implements Expr.Visitor<Object>,
+                             Stmt.Visitor<Void> {
+
+    // public api interface - takes statements and applies interpreter's functionality
+    void interpret(List<Stmt> statements) {
         // attempt to evaluate given expression
         try {
-            // try evaluation
-            Object value = evaluate(expression);
-            // display evaluation return
-            System.out.println(stringify(value));
+            // iterate for created statements
+            for (Stmt statement : statements) {
+                // execute each statement
+                execute(statement);
+            }
         }
         // anticipate errors from interpreting
         catch (RuntimeError error) {
@@ -130,6 +134,32 @@ class Interpreter implements Expr.Visitor<Object> {
     private Object evaluate(Expr expr) {
         // get back expression's visitor implementation
         return expr.accept(this);
+    }
+
+    // execution
+    private void execute(Stmt stmt) {
+        // call statement execution
+        stmt.accept(this);
+    }
+
+    // interpret expression statements
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        // generic evaluation call to inner expression
+        evaluate(stmt.expression);
+        // statements produce no values
+        return null;
+    }
+
+    // interpret print as a statement
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        // hold internal expression to print
+        Object printVal = evaluate(stmt.expression);
+        // log expression to monitor
+        System.out.println(stringify(printVal));
+        // no value produced
+        return null;
     }
 
     // evaluate binary operations left-to-right
