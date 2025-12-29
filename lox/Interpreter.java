@@ -32,6 +32,8 @@ class Interpreter implements Expr.Visitor<Object> {
                 return !isTruthy(right);
 
             case MINUS:
+                // check for valid input
+                checkNumberOperand(expr.operator, right);
                 // recognize as number, casting allows dynamic typing
                 return -(double)right;
         }
@@ -39,6 +41,26 @@ class Interpreter implements Expr.Visitor<Object> {
         // invalid, unreachable
         return null;
     }
+
+    // checks for value matches number type
+    private void checkNumberOperand(Token operator, Object operand) {
+        // check for valid type and escape
+        if (operand instanceof Double) return;
+
+        // create error in reference to passed operator
+        throw new RuntimeError(operator, "Operand must be a number.");
+    }
+
+    // compare values in binary operation for valid type
+    private void checkNumberOperands(Token operator,
+                                    Object left, Object right) {
+
+    // check for both as numbers and exit call
+    if (left instanceof Double && right instanceof Double) return;
+
+    // generate error if not both numbers in reference of generating operator
+    throw new RuntimeError(operator, "Operands must be numbers");
+}
 
     // test entity/value association with true
     private boolean isTruthy(Object object) {
@@ -85,12 +107,24 @@ class Interpreter implements Expr.Visitor<Object> {
 
             // comparison operators that apply to numbers only
             case GREATER:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
+                // apply
                 return (double)left > (double)right;
             case GREATER_EQUAL:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
+                // apply
                 return (double)left >= (double)right;
             case LESS:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
+                // apply
                 return (double)left < (double)right;
             case LESS_EQUAL:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
+                // apply
                 return (double)left <= (double)right;
             
             // equality operators - allow comparison between different types
@@ -99,6 +133,8 @@ class Interpreter implements Expr.Visitor<Object> {
 
             // subtraction applies to numbers only
             case MINUS:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
                 // evaluate literals as numbers
                 return (double)left - (double)right;
 
@@ -115,16 +151,21 @@ class Interpreter implements Expr.Visitor<Object> {
                     return (String)left + (String)right;
                 }
 
-                // escape on invalid operation
-                break;
+                // generate error on invalid input in reference to operator - collapses stack
+                throw new RuntimeError(expr.operator,
+                    "Operands must be two numbers or two strings.");
 
             // division applies to numbers
             case SLASH:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
                 // evaluate/case numbers
                 return (double)left / (double)right;
 
             // multiplication applies to numbers
             case STAR:
+                // check for valid input
+                checkNumberOperands(expr.operator, left, right);
                 // numbers cast as doubles
                 return (double)left * (double)right;
         }
