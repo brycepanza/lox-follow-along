@@ -30,6 +30,22 @@ class Environment {
             "Undefined variable '" + name.lexeme + "'.");
     }
 
+    // attempt to assign an existing variable
+        // generate error if assignment not possible
+    void assign(Token name, Object value) {
+        // check for variable exists in scope
+        if (values.containsKey(name.lexeme)) {
+            // replace existing value at key
+            values.put(name.lexeme, value);
+            // exit call
+            return;
+        }
+
+        // generate error on identifier not found
+        throw new RuntimeError(name,
+            "Undefined variable '" + name.lexeme + "'.");
+    }
+
     // identifier assignment
         // applies to new variables and existing, same effect
     void define(String name, Object value) {

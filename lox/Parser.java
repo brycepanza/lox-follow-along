@@ -88,6 +88,34 @@ class Parser {
         return new Stmt.Expression(expr);
     }
 
+    // assignment   -> IDENTIFIER "=" assignment | equality
+    private Expr assignment() {
+        // get assignment as expressions
+        Expr expr = equality();
+
+        // check for current token as assignment operator
+        if (match(EQUAL)) {
+            // get passed l-value
+            Token equals = previous();
+            // allow kleene recursive evaluation, right-associative
+            Expr value = assignment();
+
+            // check for proper equality evaluation
+            if (expr instanceof Expr.Variable) {
+                // get name of returned equality evaluation
+                Token name = ((Expr.Variable)expr).name;
+                // pass assignment to caller
+                return new Expr.Assign(name, value);
+            }
+
+            // produce error on incorrect request
+            error(equals, "Invalid assignment target.");
+        }
+
+        // pass evaluated assignment to caller, basis
+        return expr;
+    }
+
     // evaluation for declaration statement
     private Stmt declaration() {
         // successful logic
@@ -113,7 +141,8 @@ class Parser {
         // starting rule S -> expression()
     private Expr expression() {
         // apply rule recursively
-        return equality();
+            // assignment -> equality
+        return assignment();
     }
 
     // equality     -> comparison ( (  "!=" | "==" ) comparison )*

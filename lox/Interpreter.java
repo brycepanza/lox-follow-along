@@ -190,6 +190,17 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret assignment
+    @Override
+    public Object visitAssignExpr(Expr.Assign expr) {
+        // get result of assignment evaluation attempt
+        Object value = evaluate(expr.value);
+        // apply evaluated value to map
+        environment.assign(expr.name, value);
+        // pass evaluation to caller
+        return value;
+    }
+
     // evaluate binary operations left-to-right
     @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
