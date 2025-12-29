@@ -20,8 +20,13 @@ import java.util.List;
 // main class for program
 public class Lox {
 
+    // interpreter instance to be executed
+    private static final Interpreter interpreter = new Interpreter();
+
     // execution state variable - prevent instruction execution on error
     static boolean hadError = false;
+    // check for errors made during interpreter execution
+    static boolean hadRuntimeError = false;
     // ### TODO - track if the last instruction was an error - only report blobs of errors ###
 
     // main entry point
@@ -48,6 +53,8 @@ public class Lox {
 
         // check execute status and provide exit code for error
         if (hadError) System.exit(65);
+        // check for error during interpreter execution
+        if (hadRuntimeError) System.exit(70);
     }
 
     private static void runPrompt() throws IOException {
@@ -84,7 +91,8 @@ public class Lox {
         // check for error and exit call
         if (hadError) return;
 
-        System.out.println(new AstPrinter().print(expression));
+        // run interpreter on expression
+        interpreter.interpret(expression);
     }
 
     // basic error reporting (scanning)
@@ -102,6 +110,15 @@ public class Lox {
         else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
+    }
+
+    // handle errors recevied at runtime
+    static void runtimeError(RuntimeError error) {
+        // log formatted message
+        System.out.println(error.getMessage() +
+            "\n[line " + error.token.line + "]");
+        // update state on event
+        hadRuntimeError = true;
     }
 
     static void report(int line, String where, String message) {

@@ -11,6 +11,22 @@ package com.craftinginterpreters.lox;
 // allow class to interpret expression types
 class Interpreter implements Expr.Visitor<Object> {
 
+    // public api interface - takes an expression and applies interpreter's functionality
+    void interpret(Expr expression) {
+        // attempt to evaluate given expression
+        try {
+            // try evaluation
+            Object value = evaluate(expression);
+            // display evaluation return
+            System.out.println(stringify(value));
+        }
+        // anticipate errors from interpreting
+        catch (RuntimeError error) {
+            // pass error to Lox class to display/handle
+            Lox.runtimeError(error);
+        }
+    }
+
     // apply to Literal expression, tree-node leafs
     @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
@@ -80,6 +96,27 @@ class Interpreter implements Expr.Visitor<Object> {
         if (a == null) return false;
         // apply equality check after edge-case testing
         return a.equals(b);
+    }
+
+    // format a given object as a string to pass to caller
+    private String stringify(Object object) {
+        // check for nil type
+        if (object == null) return "nil";
+
+        // check for number type
+        if (object instanceof Double) {
+            // cast as a string
+            String text = object.toString();
+            // check for redundant float display
+            if (text.endsWith(".0")) {
+                // ignore trailing float format
+                text = text.substring(0, text.length() - 2);
+            }
+            // pass generated string to caller
+            return text;
+        }
+        // direct conversion without issues
+        return object.toString();
     }
 
     // recognize grouping symbols
