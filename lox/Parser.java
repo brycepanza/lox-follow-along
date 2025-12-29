@@ -34,7 +34,7 @@ class Parser {
         // buffer to hold all statements
         List<Stmt> statements = new ArrayList<>();
         // iterate for tokens
-        while (!isAtEnd()) statements.add(statement());
+        while (!isAtEnd()) statements.add(declaration());
 
         // pass all found statements to caller
         return statements;
@@ -59,6 +59,25 @@ class Parser {
         return new Stmt.Print(printVal);
     }
 
+    // evaluation for variable declaration
+    private Stmt varDeclaration() {
+        // get identifier used for variable
+        Token name = consume(IDENTIFIER, "Expect variable name.");
+
+        // buffer to hold to hold value if initialized
+        Expr initializer = null;
+        // check for correct initialization syntax
+        if (match(EQUAL)) {
+            // hold expression value
+            initializer = expression();
+        }
+
+        // verify proper statement closing syntax
+        consume(SEMICOLON, "Expect ';' after variable declaration");
+        // pass created statement to caller with nullable initialization
+        return new Stmt.Var(name, initializer);
+    }
+
     // evaluation for expression statement
     private Stmt expressionStatement() {
         // hold statement's expression as a returned instance
@@ -67,6 +86,27 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after value.");
         // pass created Stmt instance to caller
         return new Stmt.Expression(expr);
+    }
+
+    // evaluation for declaration statement
+    private Stmt declaration() {
+        // successful logic
+        try {
+            // check for keyword used and pass status of declaration attempt
+                // declaration -> varDecl
+            if (match(VAR)) return varDeclaration();
+
+            // non-declarative statement, pass execution return to caller
+                // declaration -> statement
+            return statement();
+        }
+        // anticipate evaluation error
+        catch (ParseError error) {
+            // state fix
+            synchronize();
+            // failed parse, exit
+            return null;
+        }
     }
 
     // expression   -> equality rule
@@ -168,6 +208,12 @@ class Parser {
         if (match(NUMBER, STRING)) {
             // create literal containing token value
             return new Expr.Literal(previous().literal);
+        }
+
+        // check for variable access
+        if (match(IDENTIFIER)) {
+            // evaluate expression and pass result
+            return new Expr.Variable(previous());
         }
 
         // check for recursive rule

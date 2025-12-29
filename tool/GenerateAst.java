@@ -32,13 +32,15 @@ public class GenerateAst {
             "Binary     : Expr left, Token operator, Expr right",
             "Grouping   : Expr expression",
             "Literal    : Object value",
-            "Unary      : Token operator, Expr right"
+            "Unary      : Token operator, Expr right",
+            "Variable   : Token name"
         ));
 
         // accepted expressions following grammar's rules
         defineAst(outputDir, "Stmt", Arrays.asList(
             "Expression : Expr expression",
-            "Print      : Expr expression"
+            "Print      : Expr expression",
+            "Var        : Token name, Expr initializer"
         ));
     }
 
@@ -51,11 +53,11 @@ public class GenerateAst {
         PrintWriter writer = new PrintWriter(path, "UTF-8");
 
         writer.println("/*");
-        writer.println("#   ##########################################################################");
-        writer.println("#   #                                                                        #");
-        writer.println("#   From Robert Nystrom's 'Crafting Interpreters' Section 5. Representing Code");
-        writer.println("#   #                                                                        #");
-        writer.println("#   ##########################################################################");
+        writer.println("#   #############################################");
+        writer.println("#   #                                           #");
+        writer.println("#   From Robert Nystrom's 'Crafting Interpreters'");
+        writer.println("#   #                                           #");
+        writer.println("#   #############################################");
         writer.println("*/");
 
         // write reused boilerplate code

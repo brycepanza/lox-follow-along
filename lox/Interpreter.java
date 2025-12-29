@@ -14,6 +14,10 @@ import java.util.List;
 class Interpreter implements Expr.Visitor<Object>,
                              Stmt.Visitor<Void> {
 
+    // hold instance of Environment class for scoping,
+        // interpreter ownership of scoping maintained while interpreter is running
+    private Environment environment = new Environment();
+
     // public api interface - takes statements and applies interpreter's functionality
     void interpret(List<Stmt> statements) {
         // attempt to evaluate given expression
@@ -60,6 +64,13 @@ class Interpreter implements Expr.Visitor<Object>,
 
         // invalid, unreachable
         return null;
+    }
+
+    // check for variable reference
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        // pass hashed value
+        return environment.get(expr.name);
     }
 
     // checks for value matches number type
@@ -158,6 +169,23 @@ class Interpreter implements Expr.Visitor<Object>,
         Object printVal = evaluate(stmt.expression);
         // log expression to monitor
         System.out.println(stringify(printVal));
+        // no value produced
+        return null;
+    }
+
+    // interpret variable declarations for AST requirements
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        // buffer populated on variable initialization
+        Object initVal = null;
+        // check for initialization made
+        if (stmt.initializer != null) {
+            // get value
+            initVal = evaluate(stmt.initializer);
+        }
+
+        // track new value in hash
+        environment.define(stmt.name.lexeme, initVal);
         // no value produced
         return null;
     }

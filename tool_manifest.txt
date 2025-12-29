@@ -1,3 +1,0 @@
-Main-Class: com.craftinginterpreters.tool.GenerateAst
-
-
