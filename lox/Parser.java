@@ -9,6 +9,7 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 // access token types direct
@@ -42,9 +43,11 @@ class Parser {
 
     // evaluate type of statement expression pass result of execution
     private Stmt statement() {
+        // check for 'for' keyword
+        if (match(FOR)) return forStatement();
         // check for conditional branch logic
         if (match(IF)) return ifStatement();
-        // check for while loop keyword
+        // check for 'while' loop keyword
         if (match(WHILE)) return whileStatement();
         // check for print statement case
         if (match(PRINT)) return printStatement();
@@ -55,6 +58,81 @@ class Parser {
         return expressionStatement();
     }
 
+    // evaluation for 'for' statement
+    private Stmt forStatement() {
+        // require open parentheses
+        consume(LEFT_PAREN, "Expect a '(' after 'for'.");
+
+        // hold initializer of loop
+        Stmt initializer;
+
+        // check for no initiailizer, for (;...;...)
+        if (match(SEMICOLON)) {
+            // no evaluation
+            initializer = null;
+        }
+        // check for initializer as new variable
+        else if (match(VAR)) {
+            // evaluate statement
+            initializer = varDeclaration();
+        }
+        // assume existing variable in expression
+        else {
+            // evaluate as expression without declaration
+            initializer = expressionStatement();
+        }
+
+        // hold conditional statement, default to none (infinite)
+        Expr condition = null;
+
+        // check for some expression given
+        if (!check(SEMICOLON)) {
+            // assign condition as given expression at current token
+            condition = expression();
+        }
+        // require end of condition statement delimiter
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+
+        // hold per-pass iteration variable value modification, default to none
+        Expr increment = null;
+
+        // check if some expression given
+        if (!check(RIGHT_PAREN)) {
+            // assign to expression at current token
+            increment = expression();
+        }
+        // require closign parentheses
+        consume(RIGHT_PAREN, "Expect ')' after 'for' clauses.");
+
+        // evaluate body on successful 'for' clause evaluation
+        Stmt body = statement();
+
+        // check if an expression for iteration incrementing was given for the block
+        if (increment != null) {
+            // reassign the body to include this increment per-pass in the block statement
+            body = new Stmt.Block(
+                Arrays.asList(
+                    body,
+                    new Stmt.Expression(increment)));
+        }
+
+        // check if no condition is given for loop termination and assign to true
+        if (condition == null) condition = new Expr.Literal(true);
+        // utilize existing 'while' statement for 'for' loop structure
+            // 'for' loops are translated-to and interpreted as 'while' loops
+        body = new Stmt.While(condition, body);
+
+        // check if initializer given
+        if (initializer != null) {
+            // add initialization to block with single pass preceding loop
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+        // send evaluation to caller on successful return
+        return body;
+    }
+
+    // evaluation of 'if' statement
     private Stmt ifStatement() {
         // require open parentheses for evaluation
         consume(LEFT_PAREN, "Expect a '(' after 'if'.");
@@ -78,7 +156,7 @@ class Parser {
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
-    // evaluation for a print statement encountered
+    // evaluation for a 'print' statement encountered
     private Stmt printStatement() {
         // hold expression to be displayed
         Expr printVal = expression();
@@ -454,7 +532,7 @@ class Parser {
                 case RETURN:
                     return; // end of problematic statement found
             }
-            // pass final token
+            // pass token
             advance();
         }
 
