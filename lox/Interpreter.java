@@ -202,6 +202,24 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret encountered conditional statement
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        // check for implicit evaluation of 'if' branch
+        if (isTruthy(evaluate(stmt.condition))) {
+            // pursue corresponding branch
+            execute(stmt.thenBranch);
+        }
+        // check for an 'else' branch specified
+        else if (stmt.elseBranch != null) {
+            // pursue 'else' branch before joining similar code
+            execute(stmt.elseBranch);
+        }
+
+        // statements produce no values
+        return null;
+    }
+
     // interpret print as a statement
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {

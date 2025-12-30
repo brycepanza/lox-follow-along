@@ -42,6 +42,8 @@ class Parser {
 
     // evaluate type of statement expression pass result of execution
     private Stmt statement() {
+        // check for conditional branch logic
+        if (match(IF)) return ifStatement();
         // check for print statement case
         if (match(PRINT)) return printStatement();
         // check for block case and send new instance of block evaluation
@@ -49,6 +51,29 @@ class Parser {
 
         // default option/fallthrough case
         return expressionStatement();
+    }
+
+    private Stmt ifStatement() {
+        // require open parentheses for evaluation
+        consume(LEFT_PAREN, "Expect a '(' after 'if'.");
+        // hold conditional statement
+        Expr condition = expression();  // what happens if no expression? if () ? primary() returns null?
+        // enforce close parentheses
+        consume(RIGHT_PAREN, "Expect a ')' after 'if' condition.");
+
+        // check for evaluation branch on true
+        Stmt thenBranch = statement();
+        // default to no 'else' branch, revert to shared branch
+        Stmt elseBranch = null;
+        
+        // check for else branch given
+        if (match(ELSE)) {
+            // get execution block
+            elseBranch = statement();
+        }
+
+        // pass statement evaluation to caller
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     // evaluation for a print statement encountered
