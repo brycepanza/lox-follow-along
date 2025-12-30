@@ -382,6 +382,8 @@ class Parser {
     // verifies the next token is as expected and eats it
         // throws error if not
     private Token consume(TokenType type, String message) {
+        boolean ok = check(type);
+
         // check for current token as anticipated
         if (check(type)) return advance();
 
@@ -452,10 +454,9 @@ class Parser {
                 case RETURN:
                     return; // end of problematic statement found
             }
+            // pass final token
+            advance();
         }
-
-        // pass final token
-        advance();
 
     }
 }
