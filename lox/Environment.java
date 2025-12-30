@@ -13,8 +13,21 @@ import java.util.Map;
 
 // handle scoping
 class Environment {
+
+    // track parent scope
+    final Environment enclosing;
     // create a hash for mapping identifiers to objects
     private final Map<String, Object> values = new HashMap<>();
+
+    // initial scope creation
+    Environment() {
+        // no parent scope
+        enclosing = null;
+    }
+    // parent scope exists
+    Environment(Environment enclosing) {
+        this.enclosing = enclosing;
+    }
 
     // access the value held by an identifier
     Object get(Token name) {
@@ -23,6 +36,9 @@ class Environment {
             // pass bucket contents
             return values.get(name.lexeme);
         }
+
+        // recursive check for variable in parent scopes
+        if (enclosing != null) return enclosing.get(name);
 
         // generate error on access request to undefined var
             // evaluate at runtime to allow variable reference before creation
@@ -38,6 +54,14 @@ class Environment {
             // replace existing value at key
             values.put(name.lexeme, value);
             // exit call
+            return;
+        }
+
+        // check for a parent scope exists
+        if (enclosing != null) {
+            // recursive check parent for identifier
+            enclosing.assign(name, value);
+            // exit call on successful return without error throw
             return;
         }
 

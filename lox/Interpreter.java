@@ -153,6 +153,39 @@ class Interpreter implements Expr.Visitor<Object>,
         stmt.accept(this);
     }
 
+    // evaluation of a block of statements
+    void executeBlock(List<Stmt> statements,
+                      Environment environment) {
+    
+        // get enclosing scope
+        Environment previous = this.environment;
+        // check for 
+
+        try {
+            // update current scope to that given in call for variable lifetime evaluation
+            this.environment = environment;
+
+            // execute all statements in block
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        }
+        // collapse scope after block evaluation
+        finally {
+            this.environment = previous;
+        }
+    
+    }
+
+    // interpret block statements
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        // evaluate block with new local scope to stack
+        executeBlock(stmt.statements, new Environment(environment));
+        // no value returned
+        return null;
+    }
+
     // interpret expression statements
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {

@@ -44,6 +44,8 @@ class Parser {
     private Stmt statement() {
         // check for print statement case
         if (match(PRINT)) return printStatement();
+        // check for block case and send new instance of block evaluation
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         // default option/fallthrough case
         return expressionStatement();
@@ -86,6 +88,23 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after value.");
         // pass created Stmt instance to caller
         return new Stmt.Expression(expr);
+    }
+
+    // evaluate a block of statements
+    private List<Stmt> block() {
+        // buffer to hold all statements in the block
+        List<Stmt> statements = new ArrayList<>();
+
+        // iterate until block close or end of input
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            // evaluate statement and add to buffer
+            statements.add(declaration());
+        }
+
+        // check for closing block symbol and pass
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        // pass all statements to caller
+        return statements;
     }
 
     // assignment   -> IDENTIFIER "=" assignment | equality
