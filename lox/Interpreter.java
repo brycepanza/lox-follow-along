@@ -18,9 +18,6 @@ class Interpreter implements Expr.Visitor<Object>,
         // interpreter ownership of scoping maintained while interpreter is running
     private Environment environment = new Environment();
 
-    // state variable set by caller
-    public boolean runningRepl = false;
-
     // public api interface - takes statements and applies interpreter's functionality
     void interpret(List<Stmt> statements) {
         // attempt to evaluate given expression
@@ -43,6 +40,27 @@ class Interpreter implements Expr.Visitor<Object>,
     public Object visitLiteralExpr(Expr.Literal expr) {
         // send runtime value as object
         return expr.value;
+    }
+
+    // evaluation of logical and/or operators
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        // hold left-side rule evaluation in parsed instance
+        Object left = evaluate(expr.left);
+
+        // check parsed type for 'or' operator
+        if (expr.operator.type == TokenType.OR) {
+            // check for implicit truthful left-side evaluation and short-circuit right-side evaluation
+            if (isTruthy(left)) return left;
+        }
+        // interpret as 'and' operator
+        else {
+            // evaluate left-side expression and short-circuit right-side if condition false
+            if (!isTruthy(left)) return left;
+        }
+
+        // evaluate right-side expression if not short-circuited
+        return evaluate(expr.right);
     }
 
     // recognize unary expressions
@@ -193,10 +211,24 @@ class Interpreter implements Expr.Visitor<Object>,
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         // generic evaluation call to inner expression
-        Object eval = evaluate(stmt.expression);
+        evaluate(stmt.expression);
+        // statements produce no values
+        return null;
+    }
 
-        // check if interpreter running in cmdlin, log expression
-        if (runningRepl) System.out.println(stringify(eval));
+    // interpret encountered conditional statement
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        // check for implicit evaluation of 'if' branch
+        if (isTruthy(evaluate(stmt.condition))) {
+            // pursue corresponding branch
+            execute(stmt.thenBranch);
+        }
+        // check for an 'else' branch specified
+        else if (stmt.elseBranch != null) {
+            // pursue 'else' branch before joining similar code
+            execute(stmt.elseBranch);
+        }
 
         // statements produce no values
         return null;
@@ -226,6 +258,18 @@ class Interpreter implements Expr.Visitor<Object>,
 
         // track new value in hash
         environment.define(stmt.name.lexeme, initVal);
+        // no value produced
+        return null;
+    }
+
+    // interpret While statement in the AST
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        // iterate while instance's condition is true
+        while (isTruthy(evaluate(stmt.condition))) {    // per-loop evaluation, slow
+            // act on body of code
+            execute(stmt.body);
+        }
         // no value produced
         return null;
     }

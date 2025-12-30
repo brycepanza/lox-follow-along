@@ -9,6 +9,7 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 // access token types direct
@@ -42,6 +43,12 @@ class Parser {
 
     // evaluate type of statement expression pass result of execution
     private Stmt statement() {
+        // check for 'for' keyword
+        if (match(FOR)) return forStatement();
+        // check for conditional branch logic
+        if (match(IF)) return ifStatement();
+        // check for 'while' loop keyword
+        if (match(WHILE)) return whileStatement();
         // check for print statement case
         if (match(PRINT)) return printStatement();
         // check for block case and send new instance of block evaluation
@@ -51,7 +58,105 @@ class Parser {
         return expressionStatement();
     }
 
-    // evaluation for a print statement encountered
+    // evaluation for 'for' statement
+    private Stmt forStatement() {
+        // require open parentheses
+        consume(LEFT_PAREN, "Expect a '(' after 'for'.");
+
+        // hold initializer of loop
+        Stmt initializer;
+
+        // check for no initiailizer, for (;...;...)
+        if (match(SEMICOLON)) {
+            // no evaluation
+            initializer = null;
+        }
+        // check for initializer as new variable
+        else if (match(VAR)) {
+            // evaluate statement
+            initializer = varDeclaration();
+        }
+        // assume existing variable in expression
+        else {
+            // evaluate as expression without declaration
+            initializer = expressionStatement();
+        }
+
+        // hold conditional statement, default to none (infinite)
+        Expr condition = null;
+
+        // check for some expression given
+        if (!check(SEMICOLON)) {
+            // assign condition as given expression at current token
+            condition = expression();
+        }
+        // require end of condition statement delimiter
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+
+        // hold per-pass iteration variable value modification, default to none
+        Expr increment = null;
+
+        // check if some expression given
+        if (!check(RIGHT_PAREN)) {
+            // assign to expression at current token
+            increment = expression();
+        }
+        // require closign parentheses
+        consume(RIGHT_PAREN, "Expect ')' after 'for' clauses.");
+
+        // evaluate body on successful 'for' clause evaluation
+        Stmt body = statement();
+
+        // check if an expression for iteration incrementing was given for the block
+        if (increment != null) {
+            // reassign the body to include this increment per-pass in the block statement
+            body = new Stmt.Block(
+                Arrays.asList(
+                    body,
+                    new Stmt.Expression(increment)));
+        }
+
+        // check if no condition is given for loop termination and assign to true
+        if (condition == null) condition = new Expr.Literal(true);
+        // utilize existing 'while' statement for 'for' loop structure
+            // 'for' loops are translated-to and interpreted as 'while' loops
+        body = new Stmt.While(condition, body);
+
+        // check if initializer given
+        if (initializer != null) {
+            // add initialization to block with single pass preceding loop
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+        // send evaluation to caller on successful return
+        return body;
+    }
+
+    // evaluation of 'if' statement
+    private Stmt ifStatement() {
+        // require open parentheses for evaluation
+        consume(LEFT_PAREN, "Expect a '(' after 'if'.");
+        // hold conditional statement
+        Expr condition = expression();  // what happens if no expression? if () ? primary() returns null?
+        // enforce close parentheses
+        consume(RIGHT_PAREN, "Expect a ')' after 'if' condition.");
+
+        // check for evaluation branch on true
+        Stmt thenBranch = statement();
+        // default to no 'else' branch, revert to shared branch
+        Stmt elseBranch = null;
+        
+        // check for else branch given
+        if (match(ELSE)) {
+            // get execution block
+            elseBranch = statement();
+        }
+
+        // pass statement evaluation to caller
+        return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    // evaluation for a 'print' statement encountered
     private Stmt printStatement() {
         // hold expression to be displayed
         Expr printVal = expression();
@@ -78,6 +183,21 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after variable declaration");
         // pass created statement to caller with nullable initialization
         return new Stmt.Var(name, initializer);
+    }
+
+    // evaluation after a 'while' keyword found
+    private Stmt whileStatement() {
+        // require open parentheses
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        // evaluate expression for loop condition
+        Expr condition = expression();
+        // require close parentheses delimiter
+        consume(RIGHT_PAREN, "Expect ')' after condition");
+        // evaluate loop body
+        Stmt body = statement();
+
+        // pass evaluated loop statement to caller
+        return new Stmt.While(condition, body);
     }
 
     // evaluation for expression statement
@@ -107,10 +227,10 @@ class Parser {
         return statements;
     }
 
-    // assignment   -> IDENTIFIER "=" assignment | equality
+    // assignment   -> IDENTIFIER "=" assignment | logic_or
     private Expr assignment() {
-        // get assignment as expressions
-        Expr expr = equality();
+        // get assignment as expressions, check for fallback case
+        Expr expr = or();
 
         // check for current token as assignment operator
         if (match(EQUAL)) {
@@ -132,6 +252,44 @@ class Parser {
         }
 
         // pass evaluated assignment to caller, basis
+        return expr;
+    }
+
+    // logic_or     -> logic_and | ( "or" logic_and )*
+    private Expr or() {
+        // check fallback case, hold left-side evaluation
+        Expr expr = and();
+
+        // check kleene rule for "or" evaluation
+        while (match(OR)) {
+            // keep operator
+            Token operator = previous();
+            // hold right-side evaluation
+            Expr right = and();
+            // update expression for current evaluation state
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        // pass evaluated expression to caller
+        return expr;
+    }
+
+    // logic_and    -> equality | ( "and" equality )*
+    private Expr and() {
+        // evaluate left-side expression, fall-back case
+        Expr expr = equality();
+
+        // check kleene rule for "and" token in correct evaluation, don't pass precendence line
+        while (match(AND)) {
+            // hold passed matched operator after left-side evaluation
+            Token operator = previous();
+            // hold right-side evaluation
+            Expr right = equality();
+            // update expression evaluation to match current state
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        // pass rule evaluation to caller
         return expr;
     }
 
@@ -302,6 +460,8 @@ class Parser {
     // verifies the next token is as expected and eats it
         // throws error if not
     private Token consume(TokenType type, String message) {
+        boolean ok = check(type);
+
         // check for current token as anticipated
         if (check(type)) return advance();
 
@@ -372,10 +532,9 @@ class Parser {
                 case RETURN:
                     return; // end of problematic statement found
             }
+            // pass token
+            advance();
         }
-
-        // pass final token
-        advance();
 
     }
 }
