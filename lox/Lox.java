@@ -38,9 +38,13 @@ public class Lox {
         }
         // execute on proper argument count
         else if (args.length == 1) {
+            // execute from file direct
             runFile(args[0]);
         }
         else {
+            // inform interpreter of execution in repl mode
+            interpreter.runningRepl = true;
+            // execute through cmdline
             runPrompt();
         }
     }
