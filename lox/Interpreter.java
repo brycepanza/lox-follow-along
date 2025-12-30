@@ -45,6 +45,27 @@ class Interpreter implements Expr.Visitor<Object>,
         return expr.value;
     }
 
+    // evaluation of logical and/or operators
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        // hold left-side rule evaluation in parsed instance
+        Object left = evaluate(expr.left);
+
+        // check parsed type for 'or' operator
+        if (expr.operator.type == TokenType.OR) {
+            // check for implicit truthful left-side evaluation and short-circuit right-side evaluation
+            if (isTruthy(left)) return left;
+        }
+        // interpret as 'and' operator
+        else {
+            // evaluate left-side expression and short-circuit right-side if condition false
+            if (!isTruthy(left)) return left;
+        }
+
+        // evaluate right-side expression if not short-circuited
+        return evaluate(expr.right);
+    }
+
     // recognize unary expressions
     @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
@@ -244,6 +265,18 @@ class Interpreter implements Expr.Visitor<Object>,
 
         // track new value in hash
         environment.define(stmt.name.lexeme, initVal);
+        // no value produced
+        return null;
+    }
+
+    // interpret While statement in the AST
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        // iterate while instance's condition is true
+        while (isTruthy(evaluate(stmt.condition))) {    // per-loop evaluation, slow
+            // act on body of code
+            execute(stmt.body);
+        }
         // no value produced
         return null;
     }

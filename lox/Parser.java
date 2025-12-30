@@ -44,6 +44,8 @@ class Parser {
     private Stmt statement() {
         // check for conditional branch logic
         if (match(IF)) return ifStatement();
+        // check for while loop keyword
+        if (match(WHILE)) return whileStatement();
         // check for print statement case
         if (match(PRINT)) return printStatement();
         // check for block case and send new instance of block evaluation
@@ -105,6 +107,21 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
+    // evaluation after a 'while' keyword found
+    private Stmt whileStatement() {
+        // require open parentheses
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        // evaluate expression for loop condition
+        Expr condition = expression();
+        // require close parentheses delimiter
+        consume(RIGHT_PAREN, "Expect ')' after condition");
+        // evaluate loop body
+        Stmt body = statement();
+
+        // pass evaluated loop statement to caller
+        return new Stmt.While(condition, body);
+    }
+
     // evaluation for expression statement
     private Stmt expressionStatement() {
         // hold statement's expression as a returned instance
@@ -132,10 +149,10 @@ class Parser {
         return statements;
     }
 
-    // assignment   -> IDENTIFIER "=" assignment | equality
+    // assignment   -> IDENTIFIER "=" assignment | logic_or
     private Expr assignment() {
-        // get assignment as expressions
-        Expr expr = equality();
+        // get assignment as expressions, check for fallback case
+        Expr expr = or();
 
         // check for current token as assignment operator
         if (match(EQUAL)) {
@@ -157,6 +174,44 @@ class Parser {
         }
 
         // pass evaluated assignment to caller, basis
+        return expr;
+    }
+
+    // logic_or     -> logic_and | ( "or" logic_and )*
+    private Expr or() {
+        // check fallback case, hold left-side evaluation
+        Expr expr = and();
+
+        // check kleene rule for "or" evaluation
+        while (match(OR)) {
+            // keep operator
+            Token operator = previous();
+            // hold right-side evaluation
+            Expr right = and();
+            // update expression for current evaluation state
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        // pass evaluated expression to caller
+        return expr;
+    }
+
+    // logic_and    -> equality | ( "and" equality )*
+    private Expr and() {
+        // evaluate left-side expression, fall-back case
+        Expr expr = equality();
+
+        // check kleene rule for "and" token in correct evaluation, don't pass precendence line
+        while (match(AND)) {
+            // hold passed matched operator after left-side evaluation
+            Token operator = previous();
+            // hold right-side evaluation
+            Expr right = equality();
+            // update expression evaluation to match current state
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        // pass rule evaluation to caller
         return expr;
     }
 
