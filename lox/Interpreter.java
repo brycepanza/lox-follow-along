@@ -210,7 +210,7 @@ class Interpreter implements Expr.Visitor<Object>,
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         // buffer populated on variable initialization
-        Object initVal = null;
+        Object initVal = environment.UNINITIALIZED;
         // check for initialization made
         if (stmt.initializer != null) {
             // get value

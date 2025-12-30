@@ -19,6 +19,10 @@ class Environment {
     // create a hash for mapping identifiers to objects
     private final Map<String, Object> values = new HashMap<>();
 
+    // object for separating nulled variables from uninitialized ones
+        // should be visible to callers
+    public static final Object UNINITIALIZED = new Object();
+
     // initial scope creation
     Environment() {
         // no parent scope
@@ -36,7 +40,7 @@ class Environment {
             // hold return value
             Object val = values.get(name.lexeme);
             // check for unititialized
-            if (val == null) {
+            if (val == UNINITIALIZED) {
                 // generate error
                 throw new RuntimeError(name,
                     "Uninitialized variable '" + name.lexeme + "'.");
