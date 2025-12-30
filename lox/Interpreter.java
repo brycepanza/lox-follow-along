@@ -18,6 +18,9 @@ class Interpreter implements Expr.Visitor<Object>,
         // interpreter ownership of scoping maintained while interpreter is running
     private Environment environment = new Environment();
 
+    // state variable set by caller
+    public boolean runningRepl = false;
+
     // public api interface - takes statements and applies interpreter's functionality
     void interpret(List<Stmt> statements) {
         // attempt to evaluate given expression
@@ -190,7 +193,11 @@ class Interpreter implements Expr.Visitor<Object>,
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         // generic evaluation call to inner expression
-        evaluate(stmt.expression);
+        Object eval = evaluate(stmt.expression);
+
+        // check if interpreter running in cmdlin, log expression
+        if (runningRepl) System.out.println(stringify(eval));
+
         // statements produce no values
         return null;
     }
