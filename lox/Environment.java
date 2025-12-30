@@ -19,6 +19,10 @@ class Environment {
     // create a hash for mapping identifiers to objects
     private final Map<String, Object> values = new HashMap<>();
 
+    // object for separating nulled variables from uninitialized ones
+        // should be visible to callers
+    public static final Object UNINITIALIZED = new Object();
+
     // initial scope creation
     Environment() {
         // no parent scope
@@ -33,8 +37,17 @@ class Environment {
     Object get(Token name) {
         // check if object in hashmap
         if (values.containsKey(name.lexeme)) {
-            // pass bucket contents
-            return values.get(name.lexeme);
+            // hold return value
+            Object val = values.get(name.lexeme);
+            // check for unititialized
+            if (val == UNINITIALIZED) {
+                // generate error
+                throw new RuntimeError(name,
+                    "Uninitialized variable '" + name.lexeme + "'.");
+            }
+
+            // pass bucket contents on initialized var found
+            return val;
         }
 
         // recursive check for variable in parent scopes
