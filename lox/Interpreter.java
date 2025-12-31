@@ -389,6 +389,15 @@ class Interpreter implements Expr.Visitor<Object>,
 
         // translate evaluated callee expression to a callable object
         LoxCallable function = (LoxCallable)callee;
+
+        // check for incorrect amount of arguments given
+        if (arguments.size() != function.arity()) {
+            // do not allow execution
+            throw new RuntimeError(expr.paren, "Expected " +
+                function.arity() + " arguments but got " +
+                arguments.size() + ".");
+        }
+        
         // pass result of call
         return function.call(this, arguments);
     }
