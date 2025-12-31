@@ -91,6 +91,11 @@ public class Lox {
         // check for error and exit call
         if (hadError) return;
 
+        // create Resolver instance for variable binding and provide with reference to interpreter
+        Resolver resolver = new Resolver(interpreter);
+        // single-pass evaluate variable bindings before interpretation
+        resolver.resolve(statements);
+
         // run interpreter on statements
         interpreter.interpret(statements);
     }
