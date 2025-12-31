@@ -15,9 +15,34 @@ import java.util.List;
 class Interpreter implements Expr.Visitor<Object>,
                              Stmt.Visitor<Void> {
 
-    // hold instance of Environment class for scoping,
+    // create global scope
+    final Environment globals = new Environment();
+    // hold instance of Environment class for scoping and set to globals
         // interpreter ownership of scoping maintained while interpreter is running
-    private Environment environment = new Environment();
+    private Environment environment = globals;
+
+    // define native functions in global space on instance creation
+    Interpreter() {
+        // returns time since unix epoch in seconds
+            // represent as variable that implements a LoxCallable interface
+        globals.define("clock", new LoxCallable() {
+            // no parameters
+            @Override
+            public int arity() { return 0; }
+
+            // logic to call function
+            @Override
+            public Object call(Interpreter interpreter,
+                               List<Object> arguments) {
+                // send back time on system clock as double
+                return (double)System.currentTimeMillis() / 1000.0;
+            }
+
+            // on attempt to print
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+    }
 
     // public api interface - takes statements and applies interpreter's functionality
     void interpret(List<Stmt> statements) {
@@ -397,7 +422,7 @@ class Interpreter implements Expr.Visitor<Object>,
                 function.arity() + " arguments but got " +
                 arguments.size() + ".");
         }
-        
+
         // pass result of call
         return function.call(this, arguments);
     }

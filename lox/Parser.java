@@ -409,7 +409,7 @@ class Parser {
         List<Expr> arguments = new ArrayList<>();
 
         // check for arguments given
-        if (!match(RIGHT_PAREN)) {
+        if (!check(RIGHT_PAREN)) {
             // iterate for arguments
             do {
                 // apply a limit on arguments allow     <- should be a constant ???
@@ -417,8 +417,10 @@ class Parser {
                     // report limit exceeding
                     error(peek(), "Can't have more than 255 arguments.");
                 }
+
                 // expand expression and add as argument
                 arguments.add(expression());
+
             } while (match(COMMA));
         }
         
