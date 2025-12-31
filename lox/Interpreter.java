@@ -8,15 +8,41 @@
 
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // allow class to interpret expression and statementtypes
 class Interpreter implements Expr.Visitor<Object>,
                              Stmt.Visitor<Void> {
 
-    // hold instance of Environment class for scoping,
+    // create global scope
+    final Environment globals = new Environment();
+    // hold instance of Environment class for scoping and set to globals
         // interpreter ownership of scoping maintained while interpreter is running
-    private Environment environment = new Environment();
+    private Environment environment = globals;
+
+    // define native functions in global space on instance creation
+    Interpreter() {
+        // returns time since unix epoch in seconds
+            // represent as variable that implements a LoxCallable interface
+        globals.define("clock", new LoxCallable() {
+            // no parameters
+            @Override
+            public int arity() { return 0; }
+
+            // logic to call function
+            @Override
+            public Object call(Interpreter interpreter,
+                               List<Object> arguments) {
+                // send back time on system clock as double
+                return (double)System.currentTimeMillis() / 1000.0;
+            }
+
+            // on attempt to print
+            @Override
+            public String toString() { return "<native fn>"; }
+        });
+    }
 
     // public api interface - takes statements and applies interpreter's functionality
     void interpret(List<Stmt> statements) {
@@ -216,6 +242,17 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret function
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        // interpret statement as a function
+        LoxFunction function = new LoxFunction(stmt, environment);
+        // add to scope with instance as value
+        environment.define(stmt.name.lexeme, function);
+        // statements produce no values
+        return null;
+    }
+
     // interpret encountered conditional statement
     @Override
     public Void visitIfStmt(Stmt.If stmt) {
@@ -243,6 +280,22 @@ class Interpreter implements Expr.Visitor<Object>,
         System.out.println(stringify(printVal));
         // no value produced
         return null;
+    }
+
+    // interpret return
+    @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        // default to no value
+        Object value = null;
+
+        // check if given statement has return value
+        if (stmt.value != null) {
+            // interpret expression and reassign statement return value
+            value = evaluate(stmt.value);
+        }
+
+        // generate Return instance (exceptions to catch)
+        throw new Return(value);
     }
 
     // interpret variable declarations for AST requirements
@@ -363,5 +416,41 @@ class Interpreter implements Expr.Visitor<Object>,
         // default to failure
         return null;
         
+    }
+
+    // node has call expression attached
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        // evaluate expression to be called
+        Object callee = evaluate(expr.callee);
+
+        // buffer for arguments associated with node
+        List<Object> arguments = new ArrayList<>();
+        // iterate for associate arguments
+        for (Expr argument : expr.arguments) {
+            // evaluate expression and copy value to local buffer
+            arguments.add(evaluate(argument));
+        }
+
+        // check if called expression has is not allowed as a callable
+        if (!(callee instanceof LoxCallable)) {
+            // generate error
+            throw new RuntimeError(expr.paren,
+                "Can only call functions and classes.");
+        }
+
+        // translate evaluated callee expression to a callable object
+        LoxCallable function = (LoxCallable)callee;
+
+        // check for incorrect amount of arguments given
+        if (arguments.size() != function.arity()) {
+            // do not allow execution
+            throw new RuntimeError(expr.paren, "Expected " +
+                function.arity() + " arguments but got " +
+                arguments.size() + ".");
+        }
+
+        // pass result of call
+        return function.call(this, arguments);
     }
 }

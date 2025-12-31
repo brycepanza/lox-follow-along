@@ -51,6 +51,8 @@ class Parser {
         if (match(WHILE)) return whileStatement();
         // check for print statement case
         if (match(PRINT)) return printStatement();
+        // check for statement as return statement
+        if (match(RETURN)) return returnStatement();
         // check for block case and send new instance of block evaluation
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -60,7 +62,7 @@ class Parser {
 
     // evaluation for 'for' statement
     private Stmt forStatement() {
-        // require open parentheses
+        // require open parenthesis
         consume(LEFT_PAREN, "Expect a '(' after 'for'.");
 
         // hold initializer of loop
@@ -101,7 +103,7 @@ class Parser {
             // assign to expression at current token
             increment = expression();
         }
-        // require closign parentheses
+        // require closign parenthesis
         consume(RIGHT_PAREN, "Expect ')' after 'for' clauses.");
 
         // evaluate body on successful 'for' clause evaluation
@@ -132,13 +134,13 @@ class Parser {
         return body;
     }
 
-    // evaluation of 'if' statement
+    // parse of 'if' statement
     private Stmt ifStatement() {
-        // require open parentheses for evaluation
+        // require open parenthesis for evaluation
         consume(LEFT_PAREN, "Expect a '(' after 'if'.");
         // hold conditional statement
         Expr condition = expression();  // what happens if no expression? if () ? primary() returns null?
-        // enforce close parentheses
+        // enforce close parenthesis
         consume(RIGHT_PAREN, "Expect a ')' after 'if' condition.");
 
         // check for evaluation branch on true
@@ -156,7 +158,7 @@ class Parser {
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
-    // evaluation for a 'print' statement encountered
+    // parse a 'print' statement encountered
     private Stmt printStatement() {
         // hold expression to be displayed
         Expr printVal = expression();
@@ -164,6 +166,26 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after value.");
         // pass created object to caller
         return new Stmt.Print(printVal);
+    }
+
+    // parse logic for 'return' statement encountered
+    private Stmt returnStatement() {
+        // hold keyword for 'return''
+        Token keyword = previous();
+        // default to void return
+        Expr value = null;
+
+        // check if value given after 'return' keyword
+        if (!check(SEMICOLON)) {
+            // reassign return value with branch expansion
+            value = expression();
+        }
+
+        // require semicolon
+        consume(SEMICOLON, "Expect ';' after a 'return' value.");
+
+        // pass created statement node to caller
+        return new Stmt.Return(keyword, value);
     }
 
     // evaluation for variable declaration
@@ -185,13 +207,13 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
-    // evaluation after a 'while' keyword found
+    // parse evaluation after a 'while' keyword found
     private Stmt whileStatement() {
-        // require open parentheses
+        // require open parenthesis
         consume(LEFT_PAREN, "Expect '(' after 'while'.");
         // evaluate expression for loop condition
         Expr condition = expression();
-        // require close parentheses delimiter
+        // require close parenthesis delimiter
         consume(RIGHT_PAREN, "Expect ')' after condition");
         // evaluate loop body
         Stmt body = statement();
@@ -208,6 +230,43 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after value.");
         // pass created Stmt instance to caller
         return new Stmt.Expression(expr);
+    }
+
+    // evaluate an encountered function declaration
+    private Stmt.Function function(String kind) {   // argumen specifies function vs method
+        // require identifier
+        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        // require open parenthesis
+        consume(LEFT_PAREN, "Expect '(' after " + kind  + " name.");
+
+        // buffer for parameters (token for lexeme and metadata)
+        List<Token> parameters = new ArrayList<>();
+
+        // check for end of parameters
+        if (!check(RIGHT_PAREN)) {
+            // iterate while parameters found
+            do {
+                // check if parameter limit exceeded
+                if (parameters.size()>= 255) {  // <- should be constant ?
+                    // log error
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+
+                // add parameter to buffer if identifier given
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+
+        // require closing parenthesis
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        // require a brace to open function block
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        // parse function body as a block
+        List<Stmt> body = block();
+
+        // pass parsed function as statement node to caller
+        return new Stmt.Function(name, parameters, body);
     }
 
     // evaluate a block of statements
@@ -297,6 +356,9 @@ class Parser {
     private Stmt declaration() {
         // successful logic
         try {
+            // check for function declaration and pass grammar rule to caller
+                // declaration -> funDecl
+            if (match(FUN)) return function("function");    // specify kind as function
             // check for keyword used and pass status of declaration attempt
                 // declaration -> varDecl
             if (match(VAR)) return varDeclaration();
@@ -387,7 +449,7 @@ class Parser {
         return expr;
     }
 
-    // unary    -> ( "!" | "-" ) unary | primary
+    // unary    -> ( "!" | "-" ) unary | call
     private Expr unary() {
         // check for matching recurse condition
         if (match(BANG, MINUS)) {
@@ -399,8 +461,57 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        // apply unary -> primary rule
-        return primary();
+        // apply unary -> call rule
+        return call();
+    }
+
+    // helper function to expand arguments and verify call syntax
+    private Expr finishCall(Expr callee) {
+        // buffer for arguments given with call
+        List<Expr> arguments = new ArrayList<>();
+
+        // check for arguments given
+        if (!check(RIGHT_PAREN)) {
+            // iterate for arguments
+            do {
+                // apply a limit on arguments allow     <- should be a constant ???
+                if (arguments.size() >= 255) {
+                    // report limit exceeding
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+
+                // expand expression and add as argument
+                arguments.add(expression());
+
+            } while (match(COMMA));
+        }
+        
+        // require close parenthesis
+        Token paren = consume(RIGHT_PAREN,
+                            "Expect a ')' after arguments.");
+                    
+        // pass evaluated expression to call()
+        return new Expr.Call(callee, paren, arguments);
+    }
+
+    // call     -> primary ( "(" arguments? ")" )*
+    private Expr call() {
+        // evaluate callee expression as primary, call -> primary
+        Expr expr = primary();
+
+        // infinite loop, allow for currying
+        while (true) {
+            // check for call made
+            if (match(LEFT_PAREN)) {
+                // check call
+                expr = finishCall(expr);
+            }
+            // no call, exit kleene loop
+            else break;
+        }
+
+        // pass expression back up to caller
+        return expr;
     }
 
     // primary  -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")"
@@ -426,7 +537,7 @@ class Parser {
         if (match(LEFT_PAREN)) {
             // recurse on expression, enforce rule structure
             Expr expr = expression();
-            // enforce closing parentheses
+            // enforce closing parenthesis
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             // send grouped expression recursed on
             return new Expr.Grouping(expr);
