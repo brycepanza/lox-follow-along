@@ -24,9 +24,18 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         // bool tracks use-ready state for variables at scope
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
 
+    // track resolve state in reference to function scopes
+    private FunctionType currentFunction = FunctionType.NONE;
+
     // require interpreter given at instance creation
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
+    }
+
+    // constants for types of function-evaluation states
+    private enum FunctionType {
+        NONE,
+        FUNCTION
     }
 
     // iteratively resolve all grouped statements in a buffer
@@ -52,7 +61,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     // resolve all variables function should have access to, bind to function identifier's scope
         // function parameters and local variables
-    private void resolveFunction(Stmt.Function function) {
+    private void resolveFunction(Stmt.Function function, FunctionType type) {
+
+        // use instance's state variable to check if enclosed by a function and set local state variable
+        FunctionType enclosingFunction = currentFunction;
+        // update instance's state variable to pursue given function's scope
+        currentFunction = type;
+
         // create new scope for function
         beginScope();
 
@@ -69,6 +84,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         // close scope after body resolution
         endScope();
+
+        // revert state variable to enclosing state after function's scope collapse
+        currentFunction = enclosingFunction;
     }
 
     // called to open new scope for variable binding
@@ -90,6 +108,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         // reference current scope
         Map<String, Boolean> scope = scopes.peek();
+
+        // check if declaration already made in current scope
+        if (scope.containsKey(name.lexeme)) {
+            // interpret action as error
+            Lox.error(name,
+                "Already a variable with this name in this scope.");
+        }
         
         // insert new value as not ready for use
         scope.put(name.lexeme, false);
@@ -157,8 +182,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         // define function initializer for same declared scope
         define(stmt.name);
 
-        // bind parameters to function scope
-        resolveFunction(stmt);
+        // bind parameters to function scope and specify as a function
+        resolveFunction(stmt, FunctionType.FUNCTION);
 
         // no value produced
         return null;
@@ -193,6 +218,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // anticipate variable reference in return statements
     @Override
     public Void visitReturnStmt(Stmt.Return stmt) {
+
+        // check if current scope is not inside a function
+        if (currentFunction == FunctionType.NONE) {
+            // invalid 'return' usage
+            Lox.error(stmt.keyword, "Can't return from tope-level code.");
+        }
+
         // check for not void
         if (stmt.value != null) {
             // resolve any variables in return's exprsesion
