@@ -9,7 +9,9 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // allow class to interpret expression and statementtypes
 class Interpreter implements Expr.Visitor<Object>,
@@ -20,6 +22,9 @@ class Interpreter implements Expr.Visitor<Object>,
     // hold instance of Environment class for scoping and set to globals
         // interpreter ownership of scoping maintained while interpreter is running
     private Environment environment = globals;
+
+    // track proper scope binding of variables
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     // define native functions in global space on instance creation
     Interpreter() {
@@ -116,8 +121,25 @@ class Interpreter implements Expr.Visitor<Object>,
     // check for variable reference
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        // pass hashed value
-        return environment.get(expr.name);
+        // get expression using resolved scope binding
+        return lookUpVariable(expr.name, expr);
+    }
+
+    // utility method to check for a variable's binding and return the proper entities
+    private Object lookUpVariable(Token name, Expr expr) {
+        // track distance from given expression
+        Integer distance = locals.get(expr);
+
+        // check for value exists in a local scope
+        if (distance != null) {
+            // pass proper environment (traverse enclosings) scope to caller
+            return environment.getAt(distance, name.lexeme);
+        }
+        // assume to be global if not in local scope detection
+        else {
+            // pass mapped value from global scope
+            return globals.get(name);
+        }
     }
 
     // checks for value matches number type
@@ -198,6 +220,12 @@ class Interpreter implements Expr.Visitor<Object>,
     private void execute(Stmt stmt) {
         // call statement execution
         stmt.accept(this);
+    }
+
+    // called by Resolver class to give interpreter proper scoping awareness
+    void resolve(Expr expr, int depth) {
+        // make insertion to local variables using given depth
+        locals.put(expr, depth);
     }
 
     // evaluation of a block of statements
@@ -332,8 +360,21 @@ class Interpreter implements Expr.Visitor<Object>,
     public Object visitAssignExpr(Expr.Assign expr) {
         // get result of assignment evaluation attempt
         Object value = evaluate(expr.value);
-        // apply evaluated value to map
-        environment.assign(expr.name, value);
+
+        // get proper scope distance for assignment operation
+        Integer distance = locals.get(expr);
+
+        // check for successfully found in local scope stack
+        if (distance != null) {
+            // use proper scope for assignment operation
+            environment.assignAt(distance, expr.name, value);
+        }
+        // did not find in local scope stack
+        else {
+            // assume to exist in globals
+            globals.assign(expr.name, value);
+        }
+
         // pass evaluation to caller
         return value;
     }

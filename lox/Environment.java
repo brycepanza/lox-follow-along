@@ -33,6 +33,18 @@ class Environment {
         this.enclosing = enclosing;
     }
 
+    // access an object at an enclosing environment a specified distance away from current
+    Object getAt(int distance, String name) {
+        // pass hashed value from environment as a 'distance' number of parents
+        return ancestor(distance).values.get(name);
+    }
+
+    // track variable assignment at a specific environment
+    void assignAt(int distance, Token name, Object value) {
+        // make assignment to nth ancestor with distance argument
+        ancestor(distance).values.put(name.lexeme, value);
+    }
+
     // access the value held by an identifier
     Object get(Token name) {
         // check if object in hashmap
@@ -88,5 +100,20 @@ class Environment {
     void define(String name, Object value) {
         // new insertion to environment hash
         values.put(name, value);
+    }
+
+    // helper method to return an environment as a specified depth of enclosings
+    Environment ancestor(int distance) {
+        // default state as current environment
+        Environment environment = this;
+
+        // iterate for a depth specified in arguments
+        for (int i = 0; i < distance; i++) {
+            // update correct environment to parent
+            environment = environment.enclosing;
+        }
+
+        // pass reference to correct environment to caller
+        return environment;
     }
 }

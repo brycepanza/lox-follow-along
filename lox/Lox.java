@@ -88,7 +88,15 @@ public class Lox {
         // attempt get statements
         List<Stmt> statements = parser.parse();
 
-        // check for error and exit call
+        // check for error after parsing and exit call
+        if (hadError) return;
+
+        // create Resolver instance for variable binding and provide with reference to interpreter
+        Resolver resolver = new Resolver(interpreter);
+        // single-pass evaluate variable bindings before interpretation
+        resolver.resolve(statements);
+
+        // check for error generated from resolution and exit
         if (hadError) return;
 
         // run interpreter on statements
