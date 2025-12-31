@@ -8,6 +8,7 @@
 
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // allow class to interpret expression and statementtypes
@@ -363,5 +364,32 @@ class Interpreter implements Expr.Visitor<Object>,
         // default to failure
         return null;
         
+    }
+
+    // node has call expression attached
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        // evaluate expression to be called
+        Object callee = evaluate(expr.callee);
+
+        // buffer for arguments associated with node
+        List<Object> arguments = new ArrayList<>();
+        // iterate for associate arguments
+        for (Expr argument : expr.arguments) {
+            // evaluate expression and copy value to local buffer
+            arguments.add(evaluate(argument));
+        }
+
+        // check if called expression has is not allowed as a callable
+        if (!(callee instanceof LoxCallable)) {
+            // generate error
+            throw new RuntimeError(expr.paren,
+                "Can only call functions and classes.");
+        }
+
+        // translate evaluated callee expression to a callable object
+        LoxCallable function = (LoxCallable)callee;
+        // pass result of call
+        return function.call(this, arguments);
     }
 }

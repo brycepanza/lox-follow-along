@@ -387,7 +387,7 @@ class Parser {
         return expr;
     }
 
-    // unary    -> ( "!" | "-" ) unary | primary
+    // unary    -> ( "!" | "-" ) unary | call
     private Expr unary() {
         // check for matching recurse condition
         if (match(BANG, MINUS)) {
@@ -399,8 +399,55 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        // apply unary -> primary rule
-        return primary();
+        // apply unary -> call rule
+        return call();
+    }
+
+    // helper function to expand arguments and verify call syntax
+    private Expr finishCall(Expr callee) {
+        // buffer for arguments given with call
+        List<Expr> arguments = new ArrayList<>();
+
+        // check for arguments given
+        if (!match(RIGHT_PAREN)) {
+            // iterate for arguments
+            do {
+                // apply a limit on arguments allow     <- should be a constant ???
+                if (arguments.size() >= 255) {
+                    // report limit exceeding
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                // expand expression and add as argument
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+        
+        // require close parentheses
+        Token paren = consume(RIGHT_PAREN,
+                            "Expect a ')' after arguments.");
+                    
+        // pass evaluated expression to call()
+        return new Expr.Call(callee, paren, arguments);
+    }
+
+    // call     -> primary ( "(" arguments? ")" )*
+    private Expr call() {
+        // evaluate callee expression as primary, call -> primary
+        Expr expr = primary();
+
+        // infinite loop, allow for currying
+        while (true) {
+            // check for call made
+            if (match(LEFT_PAREN)) {
+                // check call
+                expr = finishCall(expr);
+            }
+            // no call, exit kleene loop
+            else break;
+        }
+
+        // pass expression back up to caller
+        return expr;
     }
 
     // primary  -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")"
