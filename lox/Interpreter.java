@@ -282,6 +282,22 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret return
+    @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        // default to no value
+        Object value = null;
+
+        // check if given statement has return value
+        if (stmt.value != null) {
+            // interpret expression and reassign statement return value
+            value = stmt.value;
+        }
+
+        // generate Return instance (exceptions to catch)
+        throw new Return(value);
+    }
+
     // interpret variable declarations for AST requirements
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {

@@ -34,7 +34,14 @@ class LoxFunction implements LoxCallable {
         }
 
         // use provided interpreter to execute the function using its specific scope
-        interpreter.executeBlock(declaration.body, environment);
+        try {
+            interpreter.executeBlock(declaration.body, environment);
+        }
+        // escape on Return RuntimeException generated
+        catch (Return returnVal) {
+            // exit call immediately and pass value to caller
+            return returnVal;
+        }
 
         // void, function pass value to caller (null translated to nil)
         return null;

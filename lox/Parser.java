@@ -51,6 +51,8 @@ class Parser {
         if (match(WHILE)) return whileStatement();
         // check for print statement case
         if (match(PRINT)) return printStatement();
+        // check for statement as return statement
+        if (match(RETURN)) return returnStatement();
         // check for block case and send new instance of block evaluation
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -132,7 +134,7 @@ class Parser {
         return body;
     }
 
-    // evaluation of 'if' statement
+    // parse of 'if' statement
     private Stmt ifStatement() {
         // require open parenthesis for evaluation
         consume(LEFT_PAREN, "Expect a '(' after 'if'.");
@@ -156,7 +158,7 @@ class Parser {
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
-    // evaluation for a 'print' statement encountered
+    // parse a 'print' statement encountered
     private Stmt printStatement() {
         // hold expression to be displayed
         Expr printVal = expression();
@@ -164,6 +166,26 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after value.");
         // pass created object to caller
         return new Stmt.Print(printVal);
+    }
+
+    // parse logic for 'return' statement encountered
+    private Stmt returnStatement() {
+        // hold keyword for 'return''
+        Token keyword = previous();
+        // default to void return
+        Expr value = null;
+
+        // check if value given after 'return' keyword
+        if (!check(SEMICOLON)) {
+            // reassign return value with branch expansion
+            value = expression();
+        }
+
+        // require semicolon
+        consume(SEMICOLON, "Expect ';' after a 'return' value.");
+
+        // pass created statement node to caller
+        return new Stmt.Return(keyword, value);
     }
 
     // evaluation for variable declaration
@@ -185,7 +207,7 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
-    // evaluation after a 'while' keyword found
+    // parse evaluation after a 'while' keyword found
     private Stmt whileStatement() {
         // require open parenthesis
         consume(LEFT_PAREN, "Expect '(' after 'while'.");
