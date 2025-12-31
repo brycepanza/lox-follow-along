@@ -44,9 +44,6 @@ class Interpreter implements Expr.Visitor<Object>,
         });
     }
 
-    // state variable set by caller
-    public boolean runningRepl = false;
-
     // public api interface - takes statements and applies interpreter's functionality
     void interpret(List<Stmt> statements) {
         // attempt to evaluate given expression
@@ -240,11 +237,7 @@ class Interpreter implements Expr.Visitor<Object>,
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         // generic evaluation call to inner expression
-        Object eval = evaluate(stmt.expression);
-
-        // check if interpreter running in cmdlin, log expression
-        if (runningRepl) System.out.println(stringify(eval));
-
+        evaluate(stmt.expression);
         // statements produce no values
         return null;
     }
