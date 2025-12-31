@@ -40,7 +40,7 @@ class LoxFunction implements LoxCallable {
         // escape on Return RuntimeException generated
         catch (Return returnVal) {
             // exit call immediately and pass value to caller
-            return returnVal;
+            return returnVal.value;
         }
 
         // void, function pass value to caller (null translated to nil)

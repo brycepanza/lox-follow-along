@@ -291,7 +291,7 @@ class Interpreter implements Expr.Visitor<Object>,
         // check if given statement has return value
         if (stmt.value != null) {
             // interpret expression and reassign statement return value
-            value = stmt.value;
+            value = evaluate(stmt.value);
         }
 
         // generate Return instance (exceptions to catch)
