@@ -246,7 +246,7 @@ class Interpreter implements Expr.Visitor<Object>,
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         // interpret statement as a function
-        LoxFunction function = new LoxFunction(stmt);
+        LoxFunction function = new LoxFunction(stmt, environment);
         // add to scope with instance as value
         environment.define(stmt.name.lexeme, function);
         // statements produce no values

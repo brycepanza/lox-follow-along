@@ -15,17 +15,23 @@ import java.util.List;
 class LoxFunction implements LoxCallable {
     // hold parsed function declaration
     private final Stmt.Function declaration;
+
+    // scope of function declaration, allows local functions
+        // enforces scope inheritance of declaration, not call location
+    private final Environment closure;
     
-    // function instance creation concerned with declaration
-    LoxFunction(Stmt.Function declaration) {
+    // function instance creation concerned with declaration and closure
+    LoxFunction(Stmt.Function declaration, Environment closure) {
+        this.closure = closure;
         this.declaration = declaration;
     }
 
     // implement required call trait
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
-        // hold global scope of interpreter
-        Environment environment = new Environment(interpreter.globals);
+        // hold function declaration scope
+            // global scope if not nested
+        Environment environment = new Environment(closure);
 
         // iterate over parameters of function call
         for (int i = 0; i < declaration.params.size(); i++) {
