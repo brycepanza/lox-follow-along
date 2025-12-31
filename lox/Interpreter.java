@@ -242,6 +242,17 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret function
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        // interpret statement as a function
+        LoxFunction function = new LoxFunction(stmt);
+        // add to scope with instance as value
+        environment.define(stmt.name.lexeme, function);
+        // statements produce no values
+        return null;
+    }
+
     // interpret encountered conditional statement
     @Override
     public Void visitIfStmt(Stmt.If stmt) {
