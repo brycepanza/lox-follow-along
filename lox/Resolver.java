@@ -353,6 +353,17 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
 
+    // handle class property setter expressions
+    @Override
+    public Void visitSetExpr(Expr.Set expr) {
+        // recurse on subexpressions
+        resolve(expr.value);
+        resolve(expr.object);
+
+        // no value created
+        return null;
+    }
+
     // variable resolution for unary expressions
     @Override
     public Void visitUnaryExpr(Expr.Unary expr) {

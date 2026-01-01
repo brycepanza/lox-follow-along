@@ -36,6 +36,12 @@ class LoxInstance {
             "Undefined property '" + name.lexeme + "'.");
     }
 
+    // allow setters on proeprties
+    void set(Token name, Object value) {
+        // store value as member of instance's fields
+        fields.put(name.lexeme, value);
+    }
+
     // associate with class name on stringify
     @Override
     public String toString() {

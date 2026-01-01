@@ -298,12 +298,19 @@ class Parser {
             // allow kleene recursive evaluation, right-associative
             Expr value = assignment();
 
-            // check for proper equality evaluation
+            // check for proper equality evaluation for variable assignment
             if (expr instanceof Expr.Variable) {
                 // get name of returned equality evaluation
                 Token name = ((Expr.Variable)expr).name;
                 // pass assignment to caller
                 return new Expr.Assign(name, value);
+            }
+            // check for method getter to receive assignment
+            else if (expr instanceof Expr.Get) {
+                // cast left-side expression as a getter
+                Expr.Get get = (Expr.Get)expr;
+                // call setter using getter as recipient
+                return new Expr.Set(get.object, get.name, value);
             }
 
             // produce error on incorrect request

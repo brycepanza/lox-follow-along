@@ -94,6 +94,28 @@ class Interpreter implements Expr.Visitor<Object>,
         return evaluate(expr.right);
     }
 
+    // interpret class property setters
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        // evalute object with property to set
+        Object object = evaluate(expr.object);
+
+        // check if invalid request
+        if (!(object instanceof LoxInstance)) {
+            // exit expressione valuation with error
+            throw new RuntimeError(expr.name,
+                                    "Only instances have fields.");
+        }
+
+        // interpret value associated with set request expression
+        Object value = evaluate(expr.value);
+        // set value of field for instance
+        ((LoxInstance)object).set(expr.name, value);
+
+        // pass interpreted value to caller
+        return value;
+    }
+
     // recognize unary expressions
     @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
