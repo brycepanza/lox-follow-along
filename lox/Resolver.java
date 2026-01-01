@@ -20,13 +20,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // reference an interpreter
     private final Interpreter interpreter;
 
-    // track resolved scopes using stack structure
-        // bool tracks use-ready state for variables at scope
-    private final Stack<Map<String, Boolean>> scopes = new Stack<>();
-
-    // track resolve state in reference to function scopes
-    private FunctionType currentFunction = FunctionType.NONE;
-
     // require interpreter given at instance creation
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -38,6 +31,22 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         FUNCTION,
         METHOD
     }
+
+    // constants for class states
+    private enum ClassType {
+        NONE,
+        CLASS
+    }
+
+    // track resolved scopes using stack structure
+        // bool tracks use-ready state for variables at scope
+    private final Stack<Map<String, Boolean>> scopes = new Stack<>();
+
+    // track resolve state in reference to function scopes
+    private FunctionType currentFunction = FunctionType.NONE;
+
+    // track state of class access for methods being resolved
+    private ClassType currentClass = ClassType.NONE;
 
     // iteratively resolve all grouped statements in a buffer
     void resolve(List<Stmt> statements) {
@@ -150,7 +159,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     }
 
-
     // anticipate block statement for variable binding
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
@@ -168,6 +176,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // anticipate class statement
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+
+        // remember state for resolution on class statement encountered
+        ClassType enclosingClass = currentClass;
+        // set resolver state variable to understand current class resolution
+        currentClass = ClassType.CLASS;
+
         // declare in current scope
         declare(stmt.name);
         // define in same scope
@@ -189,6 +203,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         // discard surrounding scope
         endScope();
+
+        // revert Resolver state variable
+        currentClass = enclosingClass;
 
         // no value produced
         return null;
@@ -385,6 +402,16 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // "this" resolution for instance reference
     @Override
     public Void visitThisExpr(Expr.This expr) {
+
+        // check for state not in class
+        if (currentClass == ClassType.NONE) {
+            // raise error for invalid state
+            Lox.error(expr.keyword,
+                "Can't use 'this' outside of a class.");
+            // exit call
+            return null;
+        }
+
         // resolve instance in local scopes only
         resolveLocal(expr, expr.keyword);
 
