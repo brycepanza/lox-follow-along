@@ -268,10 +268,10 @@ class Interpreter implements Expr.Visitor<Object>,
         environment.define(stmt.name.lexeme, null);
 
         // create new interpreted Lox class structure
-        LoxClass loxClass = new LoxClass(stmt.name.lexeme);
+        LoxClass klass = new LoxClass(stmt.name.lexeme);
 
         // fill bucket with value
-        environment.assign(stmt.name, loxClass);
+        environment.assign(stmt.name, klass);
 
         // no value produced
         return null;
@@ -509,5 +509,22 @@ class Interpreter implements Expr.Visitor<Object>,
 
         // pass result of call
         return function.call(this, arguments);
+    }
+
+    // interpret class property getter
+    @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        // interpret expression
+        Object object = evaluate(expr.object);
+
+        // check for evaluated expression as instance of an existing LoxClass\
+        if (object instanceof LoxInstance) {
+            // pass value of requested property to caller
+            return ((LoxInstance) object).get(expr.name);
+        }
+
+        // create error if incorrect type
+        throw new RuntimeError(expr.name,
+            "Only instances have properties.");
     }
 }

@@ -316,6 +316,16 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
 
+    // class property getter
+    @Override
+    public Void visitGetExpr(Expr.Get expr) {
+        // resolve expression with provided instance
+        resolve(expr.object);
+
+        // no value
+        return null;
+    }
+
     // handle grouped expressions with variables
     @Override
     public Void visitGroupingExpr(Expr.Grouping expr) {

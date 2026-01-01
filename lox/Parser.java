@@ -526,11 +526,20 @@ class Parser {
 
         // infinite loop, allow for currying
         while (true) {
-            // check for call made
+            // check for function call
             if (match(LEFT_PAREN)) {
                 // check call
                 expr = finishCall(expr);
             }
+            // check for method call
+            else if (match(DOT)) {
+                // require method identifier
+                Token name = consume(IDENTIFIER,
+                    "Expect property name after '.'.");
+                // use method name for expression parsing
+                expr = new Expr.Get(expr, name);
+            }
+
             // no call, exit kleene loop
             else break;
         }
