@@ -27,9 +27,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     // constants for types of function-evaluation states
     private enum FunctionType {
-        NONE,
-        FUNCTION,
-        METHOD
+        NONE,           // scope not currently resolving function
+        FUNCTION,       // around function
+        INITIALIZER,    // class initializer
+        METHOD          // standard class method
     }
 
     // constants for class states
@@ -197,6 +198,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             // set type as method
             FunctionType declaration = FunctionType.METHOD;
 
+            // check for constructor keyword
+            if (method.name.lexeme.equals("init")) {
+                // associate method as a constructor
+                declaration = FunctionType.INITIALIZER;
+            }
+
             // resolve function binding as a method
             resolveFunction(method, declaration);
         }
@@ -274,6 +281,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         // check for not void
         if (stmt.value != null) {
+            // check for constructor
+            if (currentFunction == FunctionType.INITIALIZER) {
+                // disallow statements from constructors
+                Lox.error(stmt.keyword,
+                    "Can't return a value from an initializer.");
+            }
+            
             // resolve any variables in return's exprsesion
             resolve(stmt.value);
         }

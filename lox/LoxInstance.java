@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // structure for runtime instances of a class
+    // manage instance state
 class LoxInstance {
     // hold instance type
     private LoxClass klass;

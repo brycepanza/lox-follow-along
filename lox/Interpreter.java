@@ -301,7 +301,8 @@ class Interpreter implements Expr.Visitor<Object>,
         // iterate for methods associated with class statement
         for (Stmt.Function method : stmt.methods) {
             // interpret current method as a function in scope of declaration
-            LoxFunction function = new LoxFunction(method, environment);
+            LoxFunction function = new LoxFunction(method, environment,
+                                    method.name.lexeme.equals("init")); // set conditional for constructor by keyword at runtime
             // add to methods associated with class
             methods.put(method.name.lexeme, function);
         }
@@ -328,8 +329,8 @@ class Interpreter implements Expr.Visitor<Object>,
     // interpret function
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        // interpret statement as a function
-        LoxFunction function = new LoxFunction(stmt, environment);
+        // interpret statement as a function, set to not constructor
+        LoxFunction function = new LoxFunction(stmt, environment, false);
         // add to scope with instance as value
         environment.define(stmt.name.lexeme, function);
         // statements produce no values

@@ -19,11 +19,17 @@ class LoxFunction implements LoxCallable {
     // scope of function declaration, allows local functions
         // enforces scope inheritance of declaration, not call location
     private final Environment closure;
+
+    // state variable to determine if callable is a class constructor
+    private final boolean isInitializer;
     
     // function instance creation concerned with declaration and closure
-    LoxFunction(Stmt.Function declaration, Environment closure) {
+    LoxFunction(Stmt.Function declaration, Environment closure,
+                boolean isInitializer) {
+                
         this.closure = closure;
         this.declaration = declaration;
+        this.isInitializer = isInitializer;
     }
 
     // method binding to instances
@@ -35,7 +41,7 @@ class LoxFunction implements LoxCallable {
         environment.define("this", instance);
 
         // pass bound method to caller as new function with updated environment
-        return new LoxFunction(declaration, environment);
+        return new LoxFunction(declaration, environment, isInitializer);
     }
 
     // implement required call trait
@@ -57,9 +63,15 @@ class LoxFunction implements LoxCallable {
         }
         // escape on Return RuntimeException generated
         catch (Return returnVal) {
+            // check for function as constructor and enforce return of instance reference
+            if (isInitializer) return closure.getAt(0, "this");
+
             // exit call immediately and pass value to caller
             return returnVal.value;
         }
+
+        // check if call to constructor and send caller reference to instance
+        if (isInitializer) return closure.getAt(0, "this");
 
         // void, function pass value to caller (null translated to nil)
         return null;

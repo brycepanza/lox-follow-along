@@ -13,6 +13,7 @@ import java.util.Map;
 
 // instance of a class in Lox, callable to create new instances
     // attributes added dynamically
+    // manage class behavior
 class LoxClass implements LoxCallable {
     final String name;
 
@@ -42,6 +43,16 @@ class LoxClass implements LoxCallable {
     public Object call(Interpreter interpreter, List<Object> arguments) {
         // create new instance of the class
         LoxInstance instance = new LoxInstance(this);
+        
+        // define initializer for body of constructor associated with class
+        LoxFunction initializer = findMethod("init");
+
+        // check for constructor provided
+        if (initializer != null) {
+            // bind initializer to created instance and execute immediately
+            initializer.bind(instance).call(interpreter, arguments);
+        }
+
         // pass instance to caller
         return instance;
     }
@@ -49,8 +60,14 @@ class LoxClass implements LoxCallable {
     // required arity getter
     @Override
     public int arity() {
-        // no constructor - no arguments
-        return 0;
+        // check for constructor associated with class
+        LoxFunction initializer = findMethod("init");
+
+        // check for no constructor
+        if (initializer == null) return 0;
+
+        // require same arguments as constructor for building state
+        return initializer.arity();
     }
 
     // for printing
