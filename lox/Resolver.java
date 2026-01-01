@@ -35,7 +35,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // constants for types of function-evaluation states
     private enum FunctionType {
         NONE,
-        FUNCTION
+        FUNCTION,
+        METHOD
     }
 
     // iteratively resolve all grouped statements in a buffer
@@ -171,6 +172,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         // define in same scope
         define(stmt.name);
+
+        // iterate for methods found by parser
+        for (Stmt.Function method : stmt.methods) {
+            // set type as method
+            FunctionType declaration = FunctionType.METHOD;
+
+            // resolve function binding as a method
+            resolveFunction(method, declaration);
+        }
 
         // no value produced
         return null;

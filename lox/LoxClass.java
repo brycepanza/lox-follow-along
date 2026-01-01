@@ -16,9 +16,25 @@ import java.util.Map;
 class LoxClass implements LoxCallable {
     final String name;
 
-    // associate with given name as identifier
-    LoxClass(String name) {
+    // associate methods (as functions) with the class
+    final Map<String, LoxFunction> methods;
+
+    // associate with given name as identifier and methods as a map of functions
+    LoxClass(String name, Map<String, LoxFunction> methods) {
         this.name = name;
+        this.methods = methods;
+    }
+
+    // check if self has a given method and return if found, return null otherwise
+    LoxFunction findMethod(String name) {
+        // check for method name in hash
+        if (methods.containsKey(name)) {
+            // pass hashed LoxFunction method object to caller
+            return methods.get(name);
+        }
+
+        // method not associated with class
+        return null;
     }
 
     // make callable to return new instances

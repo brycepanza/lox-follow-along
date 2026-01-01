@@ -31,6 +31,11 @@ class LoxInstance {
             return fields.get(name.lexeme);
         }
 
+        // check for requested token as a method
+        LoxFunction method = klass.findMethod(name.lexeme);
+        // if token as method, pass to caller
+        if (method != null) return method;
+
         // create error if property does not exist
         throw new RuntimeError(name,
             "Undefined property '" + name.lexeme + "'.");

@@ -289,8 +289,18 @@ class Interpreter implements Expr.Visitor<Object>,
         // reserve bucket in current environemnt for class using name
         environment.define(stmt.name.lexeme, null);
 
+        // create map to hold defined methods associated with the class
+        Map<String, LoxFunction> methods = new HashMap<>();
+        // iterate for methods associated with class statement
+        for (Stmt.Function method : stmt.methods) {
+            // interpret current method as a function in scope of declaration
+            LoxFunction function = new LoxFunction(method, environment);
+            // add to methods associated with class
+            methods.put(method.name.lexeme, function);
+        }
+
         // create new interpreted Lox class structure
-        LoxClass klass = new LoxClass(stmt.name.lexeme);
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
 
         // fill bucket with value
         environment.assign(stmt.name, klass);
