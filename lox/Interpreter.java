@@ -116,6 +116,13 @@ class Interpreter implements Expr.Visitor<Object>,
         return value;
     }
 
+    // interpret "this"
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        // check scope of "this" for association with field
+        return lookUpVariable(expr.keyword, expr);
+    }
+
     // recognize unary expressions
     @Override
     public Object visitUnaryExpr(Expr.Unary expr) {

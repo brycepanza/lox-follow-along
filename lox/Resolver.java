@@ -173,6 +173,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         // define in same scope
         define(stmt.name);
 
+        // create new scope for class
+        beginScope();
+        // manually insert "this" as a recognized identifier and make accessible immediately
+        scopes.peek().put("this", true);
+
         // iterate for methods found by parser
         for (Stmt.Function method : stmt.methods) {
             // set type as method
@@ -181,6 +186,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             // resolve function binding as a method
             resolveFunction(method, declaration);
         }
+
+        // discard surrounding scope
+        endScope();
 
         // no value produced
         return null;
@@ -371,6 +379,16 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         resolve(expr.object);
 
         // no value created
+        return null;
+    }
+
+    // "this" resolution for instance reference
+    @Override
+    public Void visitThisExpr(Expr.This expr) {
+        // resolve instance in local scopes only
+        resolveLocal(expr, expr.keyword);
+
+        // exit
         return null;
     }
 

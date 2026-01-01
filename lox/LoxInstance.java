@@ -33,8 +33,8 @@ class LoxInstance {
 
         // check for requested token as a method
         LoxFunction method = klass.findMethod(name.lexeme);
-        // if token as method, pass to caller
-        if (method != null) return method;
+        // if token as method, bind to source and pass to caller
+        if (method != null) return method.bind(this);
 
         // create error if property does not exist
         throw new RuntimeError(name,

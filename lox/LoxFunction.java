@@ -26,6 +26,18 @@ class LoxFunction implements LoxCallable {
         this.declaration = declaration;
     }
 
+    // method binding to instances
+    LoxFunction bind(LoxInstance instance) {
+        // get environment as copy of surrounding scope
+        Environment environment = new Environment(closure);
+
+        // associate "this" with given instance
+        environment.define("this", instance);
+
+        // pass bound method to caller as new function with updated environment
+        return new LoxFunction(declaration, environment);
+    }
+
     // implement required call trait
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {

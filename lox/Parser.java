@@ -568,6 +568,9 @@ class Parser {
             return new Expr.Literal(previous().literal);
         }
 
+        // check for access to class instance
+        if (match(THIS)) return new Expr.This(previous());
+
         // check for variable access
         if (match(IDENTIFIER)) {
             // evaluate expression and pass result
