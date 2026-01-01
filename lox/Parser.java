@@ -298,12 +298,19 @@ class Parser {
             // allow kleene recursive evaluation, right-associative
             Expr value = assignment();
 
-            // check for proper equality evaluation
+            // check for proper equality evaluation for variable assignment
             if (expr instanceof Expr.Variable) {
                 // get name of returned equality evaluation
                 Token name = ((Expr.Variable)expr).name;
                 // pass assignment to caller
                 return new Expr.Assign(name, value);
+            }
+            // check for method getter to receive assignment
+            else if (expr instanceof Expr.Get) {
+                // cast left-side expression as a getter
+                Expr.Get get = (Expr.Get)expr;
+                // call setter using getter as recipient
+                return new Expr.Set(get.object, get.name, value);
             }
 
             // produce error on incorrect request
@@ -356,6 +363,8 @@ class Parser {
     private Stmt declaration() {
         // successful logic
         try {
+            // check for class declaration
+            if (match(CLASS)) return classDeclaration();
             // check for function declaration and pass grammar rule to caller
                 // declaration -> funDecl
             if (match(FUN)) return function("function");    // specify kind as function
@@ -374,6 +383,29 @@ class Parser {
             // failed parse, exit
             return null;
         }
+    }
+
+    // evaluation of a class statement
+    private Stmt classDeclaration() {
+        // require and store identifier as name for class creation
+        Token name = consume(IDENTIFIER, "Expect class name.");
+        // require open brace
+        consume(LEFT_BRACE, "Expect '{' before class body.");
+
+        // buffer for methods specified with class
+        List<Stmt.Function> methods = new ArrayList<>();
+
+        // iterate until end of class body
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            // method evaluation as a function
+            methods.add(function("method"));    //  <- symbolic constant ?
+        }
+
+        // require right brace
+        consume(RIGHT_BRACE, "Expect '}' after class body.");
+
+        // create new instance of class and pass to caller
+        return new Stmt.Class(name, methods);
     }
 
     // expression   -> equality rule
@@ -501,11 +533,20 @@ class Parser {
 
         // infinite loop, allow for currying
         while (true) {
-            // check for call made
+            // check for function call
             if (match(LEFT_PAREN)) {
                 // check call
                 expr = finishCall(expr);
             }
+            // check for method call
+            else if (match(DOT)) {
+                // require method identifier
+                Token name = consume(IDENTIFIER,
+                    "Expect property name after '.'.");
+                // use method name for expression parsing
+                expr = new Expr.Get(expr, name);
+            }
+
             // no call, exit kleene loop
             else break;
         }
@@ -526,6 +567,9 @@ class Parser {
             // create literal containing token value
             return new Expr.Literal(previous().literal);
         }
+
+        // check for access to class instance
+        if (match(THIS)) return new Expr.This(previous());
 
         // check for variable access
         if (match(IDENTIFIER)) {

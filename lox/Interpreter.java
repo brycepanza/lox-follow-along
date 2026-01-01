@@ -94,6 +94,35 @@ class Interpreter implements Expr.Visitor<Object>,
         return evaluate(expr.right);
     }
 
+    // interpret class property setters
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        // evalute object with property to set
+        Object object = evaluate(expr.object);
+
+        // check if invalid request
+        if (!(object instanceof LoxInstance)) {
+            // exit expressione valuation with error
+            throw new RuntimeError(expr.name,
+                                    "Only instances have fields.");
+        }
+
+        // interpret value associated with set request expression
+        Object value = evaluate(expr.value);
+        // set value of field for instance
+        ((LoxInstance)object).set(expr.name, value);
+
+        // pass interpreted value to caller
+        return value;
+    }
+
+    // interpret "this"
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        // check scope of "this" for association with field
+        return lookUpVariable(expr.keyword, expr);
+    }
+
     // recognize unary expressions
     @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
@@ -261,6 +290,33 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret class statement
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        // reserve bucket in current environemnt for class using name
+        environment.define(stmt.name.lexeme, null);
+
+        // create map to hold defined methods associated with the class
+        Map<String, LoxFunction> methods = new HashMap<>();
+        // iterate for methods associated with class statement
+        for (Stmt.Function method : stmt.methods) {
+            // interpret current method as a function in scope of declaration
+            LoxFunction function = new LoxFunction(method, environment,
+                                    method.name.lexeme.equals("init")); // set conditional for constructor by keyword at runtime
+            // add to methods associated with class
+            methods.put(method.name.lexeme, function);
+        }
+
+        // create new interpreted Lox class structure
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+
+        // fill bucket with value
+        environment.assign(stmt.name, klass);
+
+        // no value produced
+        return null;
+    }
+
     // interpret expression statements
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
@@ -273,8 +329,8 @@ class Interpreter implements Expr.Visitor<Object>,
     // interpret function
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        // interpret statement as a function
-        LoxFunction function = new LoxFunction(stmt, environment);
+        // interpret statement as a function, set to not constructor
+        LoxFunction function = new LoxFunction(stmt, environment, false);
         // add to scope with instance as value
         environment.define(stmt.name.lexeme, function);
         // statements produce no values
@@ -493,5 +549,22 @@ class Interpreter implements Expr.Visitor<Object>,
 
         // pass result of call
         return function.call(this, arguments);
+    }
+
+    // interpret class property getter
+    @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        // interpret expression
+        Object object = evaluate(expr.object);
+
+        // check for evaluated expression as instance of an existing LoxClass\
+        if (object instanceof LoxInstance) {
+            // pass value of requested property to caller
+            return ((LoxInstance) object).get(expr.name);
+        }
+
+        // create error if incorrect type
+        throw new RuntimeError(expr.name,
+            "Only instances have properties.");
     }
 }
