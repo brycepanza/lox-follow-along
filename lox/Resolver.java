@@ -164,6 +164,18 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
 
+    // anticipate class statement
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        // declare in current scope
+        declare(stmt.name);
+        // define in same scope
+        define(stmt.name);
+
+        // no value produced
+        return null;
+    }
+
     // anticipate expression statements to contain variable references
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {

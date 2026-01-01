@@ -356,6 +356,8 @@ class Parser {
     private Stmt declaration() {
         // successful logic
         try {
+            // check for class declaration
+            if (match(CLASS)) return classDeclaration();
             // check for function declaration and pass grammar rule to caller
                 // declaration -> funDecl
             if (match(FUN)) return function("function");    // specify kind as function
@@ -374,6 +376,29 @@ class Parser {
             // failed parse, exit
             return null;
         }
+    }
+
+    // evaluation of a class statement
+    private Stmt classDeclaration() {
+        // require and store identifier as name for class creation
+        Token name = consume(IDENTIFIER, "Expect class name.");
+        // require open brace
+        consume(LEFT_BRACE, "Expect '{' before class body.");
+
+        // buffer for methods specified with class
+        List<Stmt.Function> methods = new ArrayList<>();
+
+        // iterate until end of class body
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            // method evaluation as a function
+            methods.add(function("method"));    //  <- symbolic constant ?
+        }
+
+        // require right brace
+        consume(RIGHT_BRACE, "Expect '}' after class body.");
+
+        // create new instance of class and pass to caller
+        return new Stmt.Class(name, methods);
     }
 
     // expression   -> equality rule

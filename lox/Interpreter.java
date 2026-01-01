@@ -261,6 +261,22 @@ class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
+    // interpret class statement
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        // reserve bucket in current environemnt for class using name
+        environment.define(stmt.name.lexeme, null);
+
+        // create new interpreted Lox class structure
+        LoxClass loxClass = new LoxClass(stmt.name.lexeme);
+
+        // fill bucket with value
+        environment.assign(stmt.name, loxClass);
+
+        // no value produced
+        return null;
+    }
+
     // interpret expression statements
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
