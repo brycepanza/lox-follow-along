@@ -188,6 +188,20 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         // define in same scope
         define(stmt.name);
 
+        // check for class inherit from self
+        if (stmt.superclass != null &&
+            stmt.name.lexeme.equals(stmt.superclass.name.lexeme)) {
+                // raise error before runtime
+                Lox.error(stmt.superclass.name,
+                    "A class can't inherit from itself.");
+        }
+
+        // check for valid class inheritance
+        if (stmt.superclass != null) {
+            // resolve superclass as variable expression
+            resolve(stmt.superclass);
+        }
+
         // create new scope for class
         beginScope();
         // manually insert "this" as a recognized identifier and make accessible immediately

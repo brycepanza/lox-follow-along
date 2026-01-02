@@ -293,6 +293,22 @@ class Interpreter implements Expr.Visitor<Object>,
     // interpret class statement
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+
+        // no inheritance by default
+        Object superclass = null;
+        // check for inheritance in statement
+        if (stmt.superclass != null) {
+            // interpret and assign superclass
+            superclass = evaluate(stmt.superclass);
+
+            // cehck for invalid type given
+            if (!(superclass instanceof LoxClass)) {
+                // error at evaluation
+                throw new RuntimeError(stmt.superclass.name,
+                    "Superclass must be a class.");
+            }
+        }
+
         // reserve bucket in current environemnt for class using name
         environment.define(stmt.name.lexeme, null);
 
@@ -308,7 +324,8 @@ class Interpreter implements Expr.Visitor<Object>,
         }
 
         // create new interpreted Lox class structure
-        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+        LoxClass klass = new LoxClass(stmt.name.lexeme,
+            (LoxClass)superclass, methods);             // require superclass correct type cast
 
         // fill bucket with value
         environment.assign(stmt.name, klass);

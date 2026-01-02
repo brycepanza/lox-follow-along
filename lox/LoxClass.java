@@ -17,12 +17,16 @@ import java.util.Map;
 class LoxClass implements LoxCallable {
     final String name;
 
+    // class for inheritance, require at instance creation
+    final LoxClass superclass;
+
     // associate methods (as functions) with the class
     final Map<String, LoxFunction> methods;
 
     // associate with given name as identifier and methods as a map of functions
-    LoxClass(String name, Map<String, LoxFunction> methods) {
+    LoxClass(String name, LoxClass superclass, Map<String, LoxFunction> methods) {
         this.name = name;
+        this.superclass = superclass;
         this.methods = methods;
     }
 
