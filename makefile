@@ -1,45 +1,67 @@
+BUILD := ./build
+
+
+####### c #######
+CC := gcc
+CFLAGS := -Wall
+
+TARGET := clox
+
+C_SRC := ./c/
+
+SOURCES := $(shell find $(C_SRC) -name "*.c")
+
+# Substitute .c endings with .o endings to create a list of object files
+OBJECTS := $(SOURCES:.c=.o)
+
+c_compile:
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(C_SRCS) -o $(TARGET)
+
+# call c execution
+c: c_compile
+	./$(TARGET)
+
+
+####### java #######
 JC := javac
 
-SRC_DIR := ./lox
-BUILD_DIR := ./build
+J_SRC := ./java/com/craftinginterpreters/lox
+BUILD := ./build
 
-# get java files from lox/ and tool/ helper classes
+J_SRCS := $(shell find $(J_SRC) -name  "*.java")
 
-SRCS := $(shell find $(SRC_DIR) -name  "*.java")
+J_MAIN := com.craftinginterpreters.lox.Lox
 
-MAIN := com.craftinginterpreters.lox.Lox
-PRINT := com.craftinginterpreters.lox.AstPrinter
+# change entries if needed
+ENTRY ?= J_MAIN
 
 MANIFEST_PATH := manifest.txt
 JAR := app.jar
 
-# default entry point - allow separate entry points
-ENTRY ?= MAIN
-
 all: jar
 
-compile:
-	mkdir -p $(BUILD_DIR)
-	$(JC) -d $(BUILD_DIR) $(SRCS)
+j_compile:
+	mkdir -p $(BUILD)
+	$(JC) -d $(BUILD) $(J_SRCS)
 
-jar: compile
+jar: j_compile
 	echo "Main-Class: $($(ENTRY))" > $(MANIFEST_PATH)
-# 	jar cfm $(JAR) manifest.txt -C $(BUILD_DIR) .
-	jar cfm $(JAR) $(MANIFEST_PATH) -C $(BUILD_DIR) .
+	jar cfm $(JAR) $(MANIFEST_PATH) -C $(BUILD) .
 
-run: jar
+# call java execution
+java: jar
 	java -jar $(JAR)
 
-# run with separate entry point given
-print:
-	$(MAKE) run ENTRY=PRINT
 
+####### clean #######
 clean:
-	rm -rf $(BUILD_DIR) $(JAR) $(MANIFEST_PATH)
+	rm -rf $(BUILD) $(JAR) $(MANIFEST_PATH)
+
 
 ##### tool-specific derictives #####
 
-TOOL_DIR := ./tool
+TOOL_DIR := ./java/com/craftinginterpreters/tool
 TOOL_BUILD_DIR := ./tool_build
 
 TOOLS := $(shell find $(TOOL_DIR) -name  "*.java")
