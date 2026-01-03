@@ -20,7 +20,7 @@ class LoxInstance {
     private final Map<String, Object> fields = new HashMap<>();
 
     // require instance type specification at creation
-    LoxInstance(LoxClass loxClass) {
+    LoxInstance(LoxClass klass) {
         this.klass = klass;
     }
 

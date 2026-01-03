@@ -389,6 +389,17 @@ class Parser {
     private Stmt classDeclaration() {
         // require and store identifier as name for class creation
         Token name = consume(IDENTIFIER, "Expect class name.");
+
+        // default to no inheritance
+        Expr.Variable superclass = null;
+        // check for inheritance given
+        if (match(LESS)) {
+            // require identifier for superclass as variable
+            consume(IDENTIFIER, "Expect superclass name.");
+            // parse superclass as variable expression
+            superclass = new Expr.Variable(previous());
+        }
+
         // require open brace
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
@@ -405,7 +416,7 @@ class Parser {
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
         // create new instance of class and pass to caller
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, superclass, methods);
     }
 
     // expression   -> equality rule
@@ -566,6 +577,21 @@ class Parser {
         if (match(NUMBER, STRING)) {
             // create literal containing token value
             return new Expr.Literal(previous().literal);
+        }
+
+        // check for superclass method reference
+        if (match(SUPER)) {
+            // hold keyword used for type identification
+            Token keyword = previous();
+            // require access notation
+            consume(DOT, "Expect '.' after 'super'.");
+
+            // require and store superclass method name
+            Token method = consume(IDENTIFIER,
+                "Expect superclass method name.");
+            
+            // pass instance of superclass expression up to caller
+            return new Expr.Super(keyword, method);
         }
 
         // check for access to class instance

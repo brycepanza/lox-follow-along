@@ -17,12 +17,16 @@ import java.util.Map;
 class LoxClass implements LoxCallable {
     final String name;
 
+    // class for inheritance, require at instance creation
+    final LoxClass superclass;
+
     // associate methods (as functions) with the class
     final Map<String, LoxFunction> methods;
 
     // associate with given name as identifier and methods as a map of functions
-    LoxClass(String name, Map<String, LoxFunction> methods) {
+    LoxClass(String name, LoxClass superclass, Map<String, LoxFunction> methods) {
         this.name = name;
+        this.superclass = superclass;
         this.methods = methods;
     }
 
@@ -32,6 +36,12 @@ class LoxClass implements LoxCallable {
         if (methods.containsKey(name)) {
             // pass hashed LoxFunction method object to caller
             return methods.get(name);
+        }
+
+        // check for inheritance
+        if (superclass != null) {
+            // check for method exists in superclass
+            return superclass.findMethod(name);
         }
 
         // method not associated with class
