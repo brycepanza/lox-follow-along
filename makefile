@@ -7,19 +7,27 @@ CFLAGS := -Wall
 
 TARGET := clox
 
-C_SRC := ./c/
+C_SRC := ./c
 
-SOURCES := $(shell find $(C_SRC) -name "*.c")
+SOURCES = $(wildcard $(C_SRC)/*.c)
 
-# Substitute .c endings with .o endings to create a list of object files
-OBJECTS := $(SOURCES:.c=.o)
+# object files should go to build folder
+OBJECTS = $(SOURCES:$(C_SRC)/%.c=$(BUILD)/%.o)
 
-c_compile:
+# link object files to executable
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+# compile c to object files
+$(BUILD)/%.o: $(C_SRC)/%.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# require directory for object and executable files
+$(BUILD):
 	mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) $(C_SRCS) -o $(TARGET)
 
 # call c execution
-c: c_compile
+c_run: $(TARGET)
 	./$(TARGET)
 
 
@@ -27,7 +35,6 @@ c: c_compile
 JC := javac
 
 J_SRC := ./java/com/craftinginterpreters/lox
-BUILD := ./build
 
 J_SRCS := $(shell find $(J_SRC) -name  "*.java")
 
@@ -56,7 +63,7 @@ java: jar
 
 ####### clean #######
 clean:
-	rm -rf $(BUILD) $(JAR) $(MANIFEST_PATH)
+	rm -rf $(BUILD) $(JAR) $(MANIFEST_PATH) $(TARGET)
 
 
 ##### tool-specific derictives #####
