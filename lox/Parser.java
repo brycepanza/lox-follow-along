@@ -579,6 +579,21 @@ class Parser {
             return new Expr.Literal(previous().literal);
         }
 
+        // check for superclass method reference
+        if (match(SUPER)) {
+            // hold keyword used for type identification
+            Token keyword = previous();
+            // require access notation
+            consume(DOT, "Expect '.' after 'super'.");
+
+            // require and store superclass method name
+            Token method = consume(IDENTIFIER,
+                "Expect superclass method name.");
+            
+            // pass instance of superclass expression up to caller
+            return new Expr.Super(keyword, method);
+        }
+
         // check for access to class instance
         if (match(THIS)) return new Expr.This(previous());
 

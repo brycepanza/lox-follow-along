@@ -116,6 +116,32 @@ class Interpreter implements Expr.Visitor<Object>,
         return value;
     }
 
+    // interpret expressions with 'super' keyword
+    @Override
+    public Object visitSuperExpr(Expr.Super expr) {
+        // store number of hops to reach correct environment in stack
+        int distance = locals.get(expr);
+
+        // reach superclass by grabbing hashed value in correct environment
+        LoxClass superclass = (LoxClass)environment.getAt(distance, "super");
+
+        // store instance calling the superclass method
+        LoxInstance object = (LoxInstance)environment.getAt(distance - 1, "this");
+
+        // hold superclass method requested by instance
+        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+
+        // check for given method not in superclass
+        if (method == null) {
+            // error at expression interpretation
+            throw new RuntimeError(expr.method,
+                "Undefined property '" + expr.method.lexeme + "'.");
+        }
+
+        // pass subclass instance-bound reference of found method from superclass to caller
+        return method.bind(object);
+    }
+
     // interpret "this"
     @Override
     public Object visitThisExpr(Expr.This expr) {
@@ -312,6 +338,14 @@ class Interpreter implements Expr.Visitor<Object>,
         // reserve bucket in current environemnt for class using name
         environment.define(stmt.name.lexeme, null);
 
+        // check for superclass inheritance
+        if (stmt.superclass != null) {
+            // create new environment for this superclass
+            environment = new Environment(environment);
+            // provide reference to superclass definition using 'super' keyword
+            environment.define("super", superclass);
+        }
+
         // create map to hold defined methods associated with the class
         Map<String, LoxFunction> methods = new HashMap<>();
         // iterate for methods associated with class statement
@@ -326,6 +360,12 @@ class Interpreter implements Expr.Visitor<Object>,
         // create new interpreted Lox class structure
         LoxClass klass = new LoxClass(stmt.name.lexeme,
             (LoxClass)superclass, methods);             // require superclass correct type cast
+
+        // check for superclass inheritance
+        if (superclass != null) {
+            // pop environment
+            environment = environment.enclosing;
+        }
 
         // fill bucket with value
         environment.assign(stmt.name, klass);
