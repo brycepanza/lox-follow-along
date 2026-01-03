@@ -16,7 +16,7 @@ typedef enum {
     OP_RETURN   // return from current function
 } OpCode;
 
-// holds information stream and metadata
+// holds chunk of bytecode as opcodes and metadata
 typedef struct {
     int count;      // number of occupied elements in dynamic array
     int capacity;   // number of allocated spots in dynamic array
@@ -27,8 +27,8 @@ typedef struct {
 
 void init_chunk(Chunk *zero_chunk);
 
-void free_chunk(Chunk *target);
+void free_chunk(Chunk *target_chunk);
 
-void write_chunk(Chunk *target, uint8_t opcode);
+void write_chunk(Chunk *target_chunk, uint8_t opcode);
 
 #endif
