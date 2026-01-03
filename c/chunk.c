@@ -17,12 +17,15 @@ void init_chunk(Chunk *zero_chunk) {
     zero_chunk->count = 0;
     zero_chunk->capacity = 0;
     zero_chunk->code = NULL;
+    init_value_array(&zero_chunk->constants);
 }
 
 // safely free an occupied chunk
 void free_chunk(Chunk *target_chunk) {
     // call macro to free allocated memory
     FREE_ARRAY(uint8_t, target_chunk->code, target_chunk->capacity);
+    // release constants
+    free_value_array(&target_chunk->constants);
     // zero-out allocated memory - set to default state
     init_chunk(target_chunk);
 }
@@ -48,4 +51,12 @@ void write_chunk(Chunk *target_chunk, uint8_t opcode) {
     target_chunk->code[target_chunk->count] = opcode;
     // increase allocated size
     target_chunk->count++;
+}
+
+// append a constant value to an array of constants in a given chunk and return size of constants array
+int add_constant(Chunk *chunk, Value new_const) {
+    // append value
+    write_value_array(&chunk->constants, new_const);
+    // send updated size to caller
+    return chunk->constants.count - 1;
 }

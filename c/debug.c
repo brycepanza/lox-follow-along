@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "debug.h"
+#include "value.h"
 
 // display opcodes in a given chunk of bytecode
 void disassemble_chunk(Chunk *chunk, const char *name) {
@@ -19,6 +20,17 @@ void disassemble_chunk(Chunk *chunk, const char *name) {
         // view instruction and move index variable
         offset = disassemble_instruction(chunk, offset);
     }
+}
+
+static int constant_instruction(const char *name, Chunk *chunk, int offset) {
+    // hold index of constant for storage information
+    uint8_t constant_index = chunk->code[offset + 1];
+    printf("%-16s %4d '", name, constant_index);
+    print_value(chunk->constants.values[constant_index]);
+    printf("'\n");
+
+    // two nodes traversed
+    return offset + 2;
 }
 
 // helper function for logging and index adjusting on simple instructions
@@ -37,6 +49,8 @@ int disassemble_instruction(Chunk *chunk, int offset) {
 
     // instruction handling based on type
     switch (instruction) {
+        case OP_CONSTANT:
+            return constant_instruction("OP_CONSTANT", chunk, offset);
         case OP_RETURN:
             return simple_instruction("OP_RETURN", offset);
         default:
