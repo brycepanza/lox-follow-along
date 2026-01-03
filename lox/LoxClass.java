@@ -38,6 +38,12 @@ class LoxClass implements LoxCallable {
             return methods.get(name);
         }
 
+        // check for inheritance
+        if (superclass != null) {
+            // check for method exists in superclass
+            return superclass.findMethod(name);
+        }
+
         // method not associated with class
         return null;
     }
