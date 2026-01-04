@@ -23,6 +23,7 @@ typedef struct {
     int count;              // number of occupied elements in dynamic array - next open index
     int capacity;           // number of allocated spots in dynamic array
     uint8_t *code;          // pointer to single-byte opcode identifier
+    int *lines;             // associates a source code line number for each opcode at the same index
     ValueArray constants;   // dynamic array of constant values
 } Chunk;
 
@@ -32,7 +33,7 @@ void init_chunk(Chunk *zero_chunk);
 
 void free_chunk(Chunk *target_chunk);
 
-void write_chunk(Chunk *target_chunk, uint8_t opcode);
+void write_chunk(Chunk *target_chunk, uint8_t opcode, int line);
 
 int add_constant(Chunk *chunk, Value new_const);
 

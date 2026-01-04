@@ -17,10 +17,10 @@ int main(int argc, const char *argv[]) {
     init_chunk(&build_chunk);
 
     int constant = add_constant(&build_chunk, 1.2);
-    write_chunk(&build_chunk, OP_CONSTANT); // opcode
-    write_chunk(&build_chunk, constant);    // value
+    write_chunk(&build_chunk, OP_CONSTANT, 123); // opcode
+    write_chunk(&build_chunk, constant, 123);    // value
 
-    write_chunk(&build_chunk, OP_RETURN);
+    write_chunk(&build_chunk, OP_RETURN, 123);
 
     // debug view chunks
     disassemble_chunk(&build_chunk, "test chunk");

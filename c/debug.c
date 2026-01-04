@@ -44,6 +44,12 @@ int disassemble_instruction(Chunk *chunk, int offset) {
 
     printf("%04d ", offset);
 
+    if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
+        printf("   | ");
+    } else {
+        printf("%4d ", chunk->lines[offset]);
+    }
+
     // get specified opcode
     uint8_t instruction = chunk->code[offset];
 
