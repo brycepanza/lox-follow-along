@@ -9,8 +9,12 @@
 #include "common.h"
 #include "chunk.h"
 #include "debug.h"
+#include "vm.h"
 
 int main(int argc, const char *argv[]) {
+
+    // initialize environment for bytecode execution
+    init_vm();
 
     Chunk build_chunk;
 
@@ -22,8 +26,9 @@ int main(int argc, const char *argv[]) {
 
     write_chunk(&build_chunk, OP_RETURN, 123);
 
-    // debug view chunks
-    disassemble_chunk(&build_chunk, "test chunk");
+    free_vm();
+
+    interpret(&build_chunk);
 
     free_chunk(&build_chunk);
 
