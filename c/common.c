@@ -24,6 +24,20 @@ int main(int argc, const char *argv[]) {
     write_chunk(&build_chunk, OP_CONSTANT, 123); // opcode
     write_chunk(&build_chunk, constant, 123);    // value
 
+    constant = add_constant(&build_chunk, 3.4);
+    write_chunk(&build_chunk, OP_CONSTANT, 123);
+    write_chunk(&build_chunk, constant, 123);
+
+    write_chunk(&build_chunk, OP_ADD, 123);
+
+    constant = add_constant(&build_chunk, 5.6);
+    write_chunk(&build_chunk, OP_CONSTANT, 123);
+    write_chunk(&build_chunk, constant, 123);
+
+    write_chunk(&build_chunk, OP_DIVIDE, 123);
+
+    write_chunk(&build_chunk, OP_NEGATE, 123);
+
     write_chunk(&build_chunk, OP_RETURN, 123);
 
     free_vm();

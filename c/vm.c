@@ -39,6 +39,15 @@ static InterpretResult run() {
 #define READ_BYTE() (*vm.instruction_ptr++)
 // reads specified constant in values table and advances program counter
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+// apply a given operation to the top two values in the values stack
+    // no type checking for operation
+    // no check for valid stack state
+#define BINARY_OP(op) \
+    do { \
+        double b = pop(); \
+        double a = pop(); \
+        push(a op b); \
+    } while (false) // single pass
 
     // master loop for single-instruction execution
     for (;;) {
@@ -67,6 +76,11 @@ static InterpretResult run() {
                 Value constant = READ_CONSTANT();
                 push(constant); // add to stack
                 break;  // continue execution, no exit
+            case OP_ADD:        BINARY_OP(+); break;    // apply operation with preprocessor >>>
+            case OP_SUBTRACT:   BINARY_OP(-); break;
+            case OP_MULTIPY:    BINARY_OP(*); break;
+            case OP_DIVIDE:     BINARY_OP(/); break;    // <<<
+            case OP_NEGATE: push(-pop()); break;    // remove top value and append negative of popped value
             case OP_RETURN:
                 // get value from stack
                 print_value(pop());
@@ -77,6 +91,7 @@ static InterpretResult run() {
 // close macros
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef BINARY_OP
 }
 
 // called for execution of a given chunk of bytecode
