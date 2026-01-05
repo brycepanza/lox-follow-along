@@ -15,9 +15,15 @@
 // global scope for virtual machine
 Vm vm;
 
+// set default stack state for global virtual machine struct
+static void reset_stack() {
+    vm.stack_top = vm.stack;    // point to base
+}
+
 // set up state for global virtual machine
 void init_vm() {
-
+    // collapse stack to default state
+    reset_stack();
 }
 
 // clear state and free resources
@@ -70,4 +76,15 @@ InterpretResult interpret(Chunk *chunk) {
 
     // execute code in vm and pass exit status to caller
     return run();
+}
+
+// append to virtual machine's stack of numbers
+void push(Value append_val) {
+    // put new value at location of stack pointer and advance stack pointer after write
+    *(vm.stack_top++) = append_val;
+}
+
+Value pop() {
+    // regress stack pointer to last write and pass dereferenced value to caller
+    return *(--vm.stack_top);
 }
