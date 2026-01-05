@@ -45,6 +45,14 @@ static InterpretResult run() {
     
 // check for existing macro definition
 #ifdef DEBUG_TRACE_EXECUTION
+    // log current stack state
+    printf("\t\t");
+    for (Value *slot = vm.stack; slot < vm.stack_top; slot++) {
+        printf("[ ");
+        print_value(*slot);
+        printf(" ]");
+    }
+    printf("\n");
     // utilize debug library function for logging current instruction
         // array as contiguous block - pointer addresses adjacent, recast difference for parameter type
     disassemble_instruction(vm.chunk, (int)(vm.instruction_ptr - vm.chunk->code));
@@ -57,10 +65,12 @@ static InterpretResult run() {
         switch(instruction) {
             case OP_CONSTANT:
                 Value constant = READ_CONSTANT();
-                print_value(constant);
-                printf("\n");
+                push(constant); // add to stack
                 break;  // continue execution, no exit
             case OP_RETURN:
+                // get value from stack
+                print_value(pop());
+                printf("\n");
                 return INTERPRET_OK;    // interpret success exit condition
         }
     }
