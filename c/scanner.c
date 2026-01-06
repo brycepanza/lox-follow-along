@@ -29,6 +29,12 @@ void init_scanner(const char *source_code) {
     scanner.line = 1;
 }
 
+static bool is_alpha(char c) {
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+           c == '_';
+}
+
 static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
@@ -126,6 +132,66 @@ static void skip_whitespace() {
     }
 }
 
+// helper to check if scanner state aligns with given keyword
+static TokenType check_keyword(int start, int length, const char *remaining, TokenType check_type) {
+    // check for matching keyword using allocation check
+    if (scanner.current - scanner.start == length - start &&
+            memcmp(scanner.start + start, remaining, length) == 0) {
+        // type aligns - return to sender
+        return check_type;
+    }
+    // keyword not matched - recognize as identifier
+    return TOKEN_IDENTIFIER;
+}
+
+// determine identifier type with scanner state
+static TokenType identifier_type() {
+    // check for start pointer in current scanner state
+    switch (scanner.start[0]) {
+        // check for keyword branches and walk
+        case 'a': return check_keyword(1, 2, "nd", TOKEN_AND);
+        case 'c': return check_keyword(1, 4, "lass", TOKEN_CLASS);
+        case 'e': return check_keyword(1, 3, "lse", TOKEN_ELSE);
+        case 'f':
+            // check scanner word length
+            if (scanner.current - scanner.start > 1) {
+                // follow branches for next character
+                switch (scanner.start[1]) {
+                    case 'a': return check_keyword(2, 3, "lse", TOKEN_FALSE);
+                    case 'o': return check_keyword(2, 1, "r", TOKEN_FOR);
+                    case 'u': return check_keyword(2, 1, "n", TOKEN_FUN);
+                }
+            }
+        case 'i': return check_keyword(1, 1, "f", TOKEN_IF);
+        case 'n': return check_keyword(1, 2, "il", TOKEN_NIL);
+        case 'o': return check_keyword(1, 1, "r", TOKEN_OR);
+        case 'p': return check_keyword(1, 4, "rint", TOKEN_PRINT);
+        case 'r': return check_keyword(1, 5, "eturn", TOKEN_RETURN);
+        case 's': return check_keyword(1, 4, "uper", TOKEN_SUPER);
+        case 't':
+            // check scanner for word continues
+            if (scanner.current - scanner.start > 1) {
+                // follow branches
+                switch (scanner.start[1]) {
+                    case 'h': return check_keyword(2, 2, "is", TOKEN_THIS);
+                    case 'r': return check_keyword(2, 2, "ue", TOKEN_TRUE);
+                }
+            }
+        case 'v': return check_keyword(1, 2, "ar", TOKEN_VAR);
+        case 'w': return check_keyword(1, 4, "hile", TOKEN_WHILE);
+    }
+    // no keyword recognized
+    return TOKEN_IDENTIFIER;
+}
+
+// creates an identifier token and passes to caller
+static Token identifier() {
+    // read entire identifier
+    while (is_alpha(peek())) advance();
+    // use helper to determine identifer type in current scanner state
+    return make_token(identifier_type());
+}
+
 // scans a number in current state and sends token
 static Token number() {
     // read entire number
@@ -176,6 +242,8 @@ Token scan_token() {
     // get current character
     char c = advance();
 
+    // check for identifier
+    if (is_alpha(c)) return identifier();
     // check for number and send new number token to caller
     if (is_digit(c)) return number();
 
