@@ -33,7 +33,7 @@ void init_vm();
 
 void free_vm();
 
-InterpretResult interpret(Chunk *chunk);
+InterpretResult interpret(const char *source_code);
 
 void push(Value append_val);
 

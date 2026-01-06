@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "common.h"
+#include "compiler.h"
 #include "debug.h"
 #include "vm.h"
 
@@ -95,12 +96,9 @@ static InterpretResult run() {
 }
 
 // called for execution of a given chunk of bytecode
-InterpretResult interpret(Chunk *chunk) {
-    vm.chunk = chunk;                       // assign to global vm by pointer
-    vm.instruction_ptr = vm.chunk->code;    // set program counter to start of instructions
-
-    // execute code in vm and pass exit status to caller
-    return run();
+InterpretResult interpret(const char *source_code) {
+    compile(source_code);   // translate to bytecode
+    return INTERPRET_OK;
 }
 
 // append to virtual machine's stack of numbers
