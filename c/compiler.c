@@ -13,6 +13,12 @@
 #include "compiler.h"
 #include "scanner.h"
 
+// check for debug bytecode macro
+#ifdef DEBUG_PRINT_CODE
+// access logging code
+#include "debug.h"
+#endif
+
 // structure to hold single-instance parser fields
 typedef struct {
     Token current;  // value of token currently held by parser
@@ -170,6 +176,14 @@ static void emit_constant(double constant) {
 static void end_compiler() {
     // cap bytecode with return
     emit_return();
+// check for macro for bytecode dump
+#ifdef DEBUG_PRINT_CODE
+    // check for no error
+    if (!parser.had_error) {
+        // log
+        disassemble_chunk(current_chunk(), "code");
+    }
+#endif
 }
 
 // make prototypes visible for expression parsing
@@ -332,6 +346,7 @@ bool compile(const char *source_code, Chunk *fill_chunk) {
     advance();
     // currently handles expressions only
     expression();
+
     // at end of source code, check for token
     consume(TOKEN_EOF, "Expected end of expressions.\n");
 
