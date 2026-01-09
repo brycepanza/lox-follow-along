@@ -9,6 +9,8 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-void compile(const char *source_code);
+#include "vm.h"
+
+bool compile(const char *source_code, Chunk *fill_chunk);
 
 #endif

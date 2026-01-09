@@ -97,8 +97,29 @@ static InterpretResult run() {
 
 // called for execution of a given chunk of bytecode
 InterpretResult interpret(const char *source_code) {
-    compile(source_code);   // translate to bytecode
-    return INTERPRET_OK;
+    // hold bytecode chunk for source code buffer
+    Chunk chunk;
+    init_chunk(&chunk);
+
+    // attempt compiling and check for exit with errors
+    if (!compile(source_code, &chunk)) {
+        // deallocate resourced
+        free_chunk(&chunk);
+        // send error to caller
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    // load compiled chunk to virtual machine
+    vm.chunk = &chunk;
+    // point to first loaded instruction
+    vm.instruction_ptr = vm.chunk->code;
+
+    // interpret compiled code and hold exit status
+    InterpretResult result = run();
+
+    // deallocate resource buffer
+    free_chunk(&chunk);
+    return result;
 }
 
 // append to virtual machine's stack of numbers

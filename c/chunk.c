@@ -32,8 +32,8 @@ void free_chunk(Chunk *target_chunk) {
     init_chunk(target_chunk);
 }
 
-// make an insertion to a targeted chunk of opcodes
-void write_chunk(Chunk *target_chunk, uint8_t opcode, int line) {
+// make an insertion to a targeted chunk of opcodes and literats
+void write_chunk(Chunk *target_chunk, uint8_t byte, int line) {
     // check for array allocation bound reached
     if (target_chunk->capacity <= target_chunk->count) {
 
@@ -54,8 +54,8 @@ void write_chunk(Chunk *target_chunk, uint8_t opcode, int line) {
 
     }
 
-    // add new node with specified opcode
-    target_chunk->code[target_chunk->count] = opcode;
+    // add new node with specified byte
+    target_chunk->code[target_chunk->count] = byte;
     // provide correct line in found in source code
     target_chunk->lines[target_chunk->count] = line;
     // increase allocated size
