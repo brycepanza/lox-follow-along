@@ -15,10 +15,17 @@
 // define types of opcodes used
 typedef enum {
     OP_CONSTANT,    // constant value
+    OP_NIL,         // NULL as dedicated opcode
+    OP_TRUE,        // bool as dedicated opcode >>>
+    OP_FALSE,       // <<<
+    OP_EQUAL,       // logical operators >>>
+    OP_GREATER,
+    OP_LESS,        // <<< (single symbols)
     OP_ADD,         // binary operator, creates value >>>
     OP_SUBTRACT,
     OP_MULTIPY,
     OP_DIVIDE,      // <<<
+    OP_NOT,         // unary logical negate
     OP_NEGATE,      // negative sign for a literal
     OP_RETURN       // return from current function
 } OpCode;

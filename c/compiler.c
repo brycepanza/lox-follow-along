@@ -167,7 +167,7 @@ static uint8_t make_constant(Value value) {
 
 // append bytecode for a constant value encountered
     // access constant by index associated with value in bytecode values array
-static void emit_constant(double constant) {
+static void emit_constant(Value constant) {
     // append instruction and index of value in values array
     emit_bytes(OP_CONSTANT, make_constant(constant));
 }
@@ -202,11 +202,29 @@ static void binary() {
 
     // check for bytecode to generate
     switch (operator_type) {
-        case TOKEN_PLUS:        emit_byte(OP_ADD); break;
-        case TOKEN_MINUS:       emit_byte(OP_SUBTRACT); break;
-        case TOKEN_STAR:        emit_byte(OP_MULTIPY); break;
-        case TOKEN_SLASH:       emit_byte(OP_DIVIDE); break;
+        case TOKEN_BANG_EQUAL:      emit_bytes(OP_EQUAL, OP_NOT); break;// use converse
+        case TOKEN_EQUAL_EQUAL:     emit_byte(OP_EQUAL); break;
+        case TOKEN_GREATER:         emit_byte(OP_GREATER); break;
+        case TOKEN_GREATER_EQUAL:   emit_bytes(OP_LESS, OP_NOT); break; // use converse
+        case TOKEN_LESS:            emit_byte(OP_LESS); break;
+        case TOKEN_LESS_EQUAL:      emit_bytes(OP_GREATER, OP_NOT); break;
+        case TOKEN_PLUS:            emit_byte(OP_ADD); break;
+        case TOKEN_MINUS:           emit_byte(OP_SUBTRACT); break;
+        case TOKEN_STAR:            emit_byte(OP_MULTIPY); break;
+        case TOKEN_SLASH:           emit_byte(OP_DIVIDE); break;
         // unreachable
+        default: return;
+    }
+}
+
+// parse tokens for fixed-value recognized literals
+static void literal() {
+    // check preceeding token for type of literal
+    switch (parser.previous.type) {
+        case TOKEN_FALSE: emit_byte(OP_FALSE); break;
+        case TOKEN_NIL: emit_byte(OP_NIL); break;
+        case TOKEN_TRUE: emit_byte(OP_TRUE); break;
+        // unrecognized
         default: return;
     }
 }
@@ -228,8 +246,8 @@ static void grouping() {
 static void number() {
     // hold value of passed token
     double value = strtod(parser.previous.start, NULL);
-    // append constant
-    emit_constant(value);
+    // append constant as lox number structure
+    emit_constant(NUMBER_VAL(value));
 }
 
 // parse a unary token in global parser
@@ -242,6 +260,8 @@ static void unary() {
 
     // check for type of operator and apply to expression
     switch (operator) {
+        // add instruction for logical 'not' after value
+        case TOKEN_BANG: emit_byte(OP_NOT); break;
         // add instruction to make negative at interpretation and exit
         case TOKEN_MINUS: emit_byte(OP_NEGATE); break;
         // unreachable/undefined
@@ -263,31 +283,31 @@ ParseRule rules[] = {
     [TOKEN_SEMICOLON]       = {NULL,        NULL,       PREC_NONE},
     [TOKEN_SLASH]           = {NULL,        binary,     PREC_FACTOR},
     [TOKEN_STAR]            = {NULL,        binary,     PREC_FACTOR},
-    [TOKEN_BANG]            = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_BANG_EQUAL]      = {NULL,        NULL,       PREC_NONE},
+    [TOKEN_BANG]            = {unary,       NULL,       PREC_NONE},
+    [TOKEN_BANG_EQUAL]      = {NULL,        binary,     PREC_EQUALITY},
     [TOKEN_EQUAL]           = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_EQUAL_EQUAL]     = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_GREATER]         = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_GREATER_EQUAL]   = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_LESS]            = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_LESS_EQUAL]      = {NULL,        NULL,       PREC_NONE},
+    [TOKEN_EQUAL_EQUAL]     = {NULL,        binary,     PREC_EQUALITY},
+    [TOKEN_GREATER]         = {NULL,        binary,     PREC_COMPARISON},
+    [TOKEN_GREATER_EQUAL]   = {NULL,        binary,     PREC_COMPARISON},
+    [TOKEN_LESS]            = {NULL,        binary,     PREC_COMPARISON},
+    [TOKEN_LESS_EQUAL]      = {NULL,        binary,     PREC_COMPARISON},
     [TOKEN_IDENTIFIER]      = {NULL,        NULL,       PREC_NONE},
     [TOKEN_STRING]          = {NULL,        NULL,       PREC_NONE},
     [TOKEN_NUMBER]          = {number,      NULL,       PREC_NONE},
     [TOKEN_AND]             = {NULL,        NULL,       PREC_NONE},
     [TOKEN_CLASS]           = {NULL,        NULL,       PREC_NONE},
     [TOKEN_ELSE]            = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_FALSE]           = {NULL,        NULL,       PREC_NONE},
+    [TOKEN_FALSE]           = {literal,     NULL,       PREC_NONE},
     [TOKEN_FOR]             = {NULL,        NULL,       PREC_NONE},
     [TOKEN_FUN]             = {NULL,        NULL,       PREC_NONE},
     [TOKEN_IF]              = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_NIL]             = {NULL,        NULL,       PREC_NONE},
+    [TOKEN_NIL]             = {literal,     NULL,       PREC_NONE},
     [TOKEN_OR]              = {NULL,        NULL,       PREC_NONE},
     [TOKEN_PRINT]           = {NULL,        NULL,       PREC_NONE},
     [TOKEN_RETURN]          = {NULL,        NULL,       PREC_NONE},
     [TOKEN_SUPER]           = {NULL,        NULL,       PREC_NONE},
     [TOKEN_THIS]            = {NULL,        NULL,       PREC_NONE},
-    [TOKEN_TRUE]            = {NULL,        NULL,       PREC_NONE},
+    [TOKEN_TRUE]            = {literal,     NULL,       PREC_NONE},
     [TOKEN_VAR]             = {NULL,        NULL,       PREC_NONE},
     [TOKEN_WHILE]           = {NULL,        NULL,       PREC_NONE},
     [TOKEN_ERROR]           = {NULL,        NULL,       PREC_NONE},
