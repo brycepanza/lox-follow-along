@@ -135,7 +135,9 @@ static void skip_whitespace() {
 // helper to check if scanner state aligns with given keyword
 static TokenType check_keyword(int start, int length, const char *remaining, TokenType check_type) {
     // check for matching keyword using allocation check
-    if (scanner.current - scanner.start == length - start &&
+    // if (scanner.current - scanner.start == length - start &&
+    //         memcmp(scanner.start + start, remaining, length) == 0) {
+    if (scanner.current - scanner.start == start + length &&
             memcmp(scanner.start + start, remaining, length) == 0) {
         // type aligns - return to sender
         return check_type;
@@ -162,6 +164,7 @@ static TokenType identifier_type() {
                     case 'u': return check_keyword(2, 1, "n", TOKEN_FUN);
                 }
             }
+            break;
         case 'i': return check_keyword(1, 1, "f", TOKEN_IF);
         case 'n': return check_keyword(1, 2, "il", TOKEN_NIL);
         case 'o': return check_keyword(1, 1, "r", TOKEN_OR);
@@ -177,6 +180,7 @@ static TokenType identifier_type() {
                     case 'r': return check_keyword(2, 2, "ue", TOKEN_TRUE);
                 }
             }
+            break;
         case 'v': return check_keyword(1, 2, "ar", TOKEN_VAR);
         case 'w': return check_keyword(1, 4, "hile", TOKEN_WHILE);
     }

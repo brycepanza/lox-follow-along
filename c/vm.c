@@ -93,8 +93,8 @@ static InterpretResult run() {
             return INTERPRET_RUNTIME_ERROR; \
         } \
         /* get values for opreation from stack */ \
-        double a = AS_NUMBER(pop()); \
         double b = AS_NUMBER(pop()); \
+        double a = AS_NUMBER(pop()); \
         push(value_type(a op b)); \
     } while (false) // single pass
 
@@ -126,6 +126,9 @@ static InterpretResult run() {
                 Value constant = READ_CONSTANT();
                 push(constant); // add to stack
                 break;  // continue execution, no exit
+            case OP_NIL: push(NIL_VAL); break;                      // recognized literals >>>
+            case OP_TRUE: push(BOOL_VAL(true)); break;
+            case OP_FALSE: push(BOOL_VAL(false)); break;            // <<<
             case OP_ADD:        BINARY_OP(NUMBER_VAL, +); break;    // apply operation with preprocessor >>>
             case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
             case OP_MULTIPY:    BINARY_OP(NUMBER_VAL, *); break;

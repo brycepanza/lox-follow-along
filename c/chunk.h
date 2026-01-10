@@ -15,6 +15,9 @@
 // define types of opcodes used
 typedef enum {
     OP_CONSTANT,    // constant value
+    OP_NIL,         // NULL as dedicated opcode
+    OP_TRUE,        // bool as dedicated opcode >>>
+    OP_FALSE,       // <<<
     OP_ADD,         // binary operator, creates value >>>
     OP_SUBTRACT,
     OP_MULTIPY,
