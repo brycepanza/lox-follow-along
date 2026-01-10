@@ -11,6 +11,20 @@
 #include "memory.h"
 #include "value.h"
 
+// compares two given values for type and value
+bool values_equal(Value a, Value b) {
+    // check for not aligned type and exit
+    if (a.type != b.type) return false;
+
+    // check for matching type
+    switch (a.type) {
+        case VAL_BOOL:      return AS_BOOL(a) == AS_BOOL(b);
+        case VAL_NIL:       return true;
+        case VAL_NUMBER:    return AS_NUMBER(a) == AS_NUMBER(b);
+        default:            return false;
+    }
+}
+
 // set a given dynamic array struct to default state
 void init_value_array(ValueArray *zero_arr) {
     zero_arr->values = NULL;

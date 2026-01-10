@@ -73,6 +73,12 @@ static Value peek(int distance) {
     return vm.stack_top[-1 - distance];     // <-- no bounds checking ?
 }
 
+// return logical evaluation of data type and state - return association with 'false'
+static bool is_falsey(Value value) {
+    // assignment to 'nil' or 'false' evaluates to false, all other values are true
+    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 
 // execute current state in global virtual machine
     // interfaced by library function interpret() - pass exit status to caller
@@ -126,13 +132,26 @@ static InterpretResult run() {
                 Value constant = READ_CONSTANT();
                 push(constant); // add to stack
                 break;  // continue execution, no exit
-            case OP_NIL: push(NIL_VAL); break;                      // recognized literals >>>
+            case OP_NIL: push(NIL_VAL); break;                  // recognized literals >>>
             case OP_TRUE: push(BOOL_VAL(true)); break;
-            case OP_FALSE: push(BOOL_VAL(false)); break;            // <<<
+            case OP_FALSE: push(BOOL_VAL(false)); break;        // <<<
+            case OP_EQUAL:
+                // hold uncast values
+                Value b = pop();
+                Value a = pop();
+                // apply logical comparison and push to stack as boolean
+                push(BOOL_VAL(values_equal(a, b)));
+                break;
+            case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;      // boolean comparison primitives as binary operations
+            case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
             case OP_ADD:        BINARY_OP(NUMBER_VAL, +); break;    // apply operation with preprocessor >>>
             case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
             case OP_MULTIPY:    BINARY_OP(NUMBER_VAL, *); break;
             case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;    // <<<
+            case OP_NOT:
+                // push opposite bool state of current top value
+                push(BOOL_VAL(is_falsey(pop())));
+                break;
             case OP_NEGATE:
                 // check for invalid type for operation
                 if (!IS_NUMBER(peek(0))) {

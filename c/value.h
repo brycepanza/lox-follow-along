@@ -49,6 +49,8 @@ typedef struct {
     Value *values;  // point to start of allocation
 } ValueArray;
 
+bool values_equal(Value a, Value b);
+
 void init_value_array(ValueArray *zero_arr);
 
 void write_value_array(ValueArray *arr, Value val);
