@@ -6,6 +6,7 @@
 #   #############################################
 */
 
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "common.h"
@@ -21,6 +22,29 @@ static void reset_stack() {
     vm.stack_top = vm.stack;    // point to base
 }
 
+// error generation during execution
+static void runtime_error(const char *format, ...) {
+    // variant arguments to iterate over
+    va_list args;
+    // initialize list of arguments
+    va_start(args, format);
+    // log applied format to standard error
+    vfprintf(stderr, format, args);
+    // end resource utilization
+    va_end(args);
+    // log cleanup
+    fputs("\n", stderr);
+
+    // get location of error (with chunk->code as pointer to allocation start)
+    size_t instruction = vm.instruction_ptr - vm.chunk->code - 1;
+    // get line number associated with instruction as index
+    int line = vm.chunk->lines[instruction];
+    // log location
+    fprintf(stderr, "[line %d] in script\n", line);
+    // clear stack after error
+    reset_stack();
+}
+
 // set up state for global virtual machine
 void init_vm() {
     // collapse stack to default state
@@ -32,6 +56,24 @@ void free_vm() {
     
 }
 
+
+// append to virtual machine's stack of numbers
+void push(Value append_val) {
+    // put new value at location of stack pointer and advance stack pointer after write
+    *(vm.stack_top++) = append_val;
+}
+
+Value pop() {
+    // regress stack pointer to last write and pass dereferenced value to caller
+    return *(--vm.stack_top);
+}
+
+// return copy of lox Value structure a given distance from top
+static Value peek(int distance) {
+    return vm.stack_top[-1 - distance];     // <-- no bounds checking ?
+}
+
+
 // execute current state in global virtual machine
     // interfaced by library function interpret() - pass exit status to caller
 static InterpretResult run() {
@@ -41,14 +83,21 @@ static InterpretResult run() {
 // reads specified constant in values table and advances program counter
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 // apply a given operation to the top two values in the values stack
-    // no type checking for operation
-    // no check for valid stack state
-#define BINARY_OP(op) \
+    // requires a casting macro for Value type and an operation to apply
+#define BINARY_OP(value_type, op) \
     do { \
-        double b = pop(); \
-        double a = pop(); \
-        push(a op b); \
+        /* check for invalid types with operation on stack state */ \
+        if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+            /* exit with error */ \
+            runtime_error("Operands must be numbers."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        /* get values for opreation from stack */ \
+        double a = AS_NUMBER(pop()); \
+        double b = AS_NUMBER(pop()); \
+        push(value_type(a op b)); \
     } while (false) // single pass
+
 
     // master loop for single-instruction execution
     for (;;) {
@@ -77,11 +126,20 @@ static InterpretResult run() {
                 Value constant = READ_CONSTANT();
                 push(constant); // add to stack
                 break;  // continue execution, no exit
-            case OP_ADD:        BINARY_OP(+); break;    // apply operation with preprocessor >>>
-            case OP_SUBTRACT:   BINARY_OP(-); break;
-            case OP_MULTIPY:    BINARY_OP(*); break;
-            case OP_DIVIDE:     BINARY_OP(/); break;    // <<<
-            case OP_NEGATE: push(-pop()); break;    // remove top value and append negative of popped value
+            case OP_ADD:        BINARY_OP(NUMBER_VAL, +); break;    // apply operation with preprocessor >>>
+            case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
+            case OP_MULTIPY:    BINARY_OP(NUMBER_VAL, *); break;
+            case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;    // <<<
+            case OP_NEGATE:
+                // check for invalid type for operation
+                if (!IS_NUMBER(peek(0))) {
+                    // exit with error
+                    runtime_error("Operand must be a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                // modify value in stack to negate
+                push(NUMBER_VAL(-AS_NUMBER(pop())));
+                break;
             case OP_RETURN:
                 // get value from stack
                 print_value(pop());
@@ -120,15 +178,4 @@ InterpretResult interpret(const char *source_code) {
     // deallocate resource buffer
     free_chunk(&chunk);
     return result;
-}
-
-// append to virtual machine's stack of numbers
-void push(Value append_val) {
-    // put new value at location of stack pointer and advance stack pointer after write
-    *(vm.stack_top++) = append_val;
-}
-
-Value pop() {
-    // regress stack pointer to last write and pass dereferenced value to caller
-    return *(--vm.stack_top);
 }

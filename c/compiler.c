@@ -167,7 +167,7 @@ static uint8_t make_constant(Value value) {
 
 // append bytecode for a constant value encountered
     // access constant by index associated with value in bytecode values array
-static void emit_constant(double constant) {
+static void emit_constant(Value constant) {
     // append instruction and index of value in values array
     emit_bytes(OP_CONSTANT, make_constant(constant));
 }
@@ -228,8 +228,8 @@ static void grouping() {
 static void number() {
     // hold value of passed token
     double value = strtod(parser.previous.start, NULL);
-    // append constant
-    emit_constant(value);
+    // append constant as lox number structure
+    emit_constant(NUMBER_VAL(value));
 }
 
 // parse a unary token in global parser
